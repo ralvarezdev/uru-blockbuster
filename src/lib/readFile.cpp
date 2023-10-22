@@ -12,9 +12,10 @@ struct Movie
   string Genre;
   int duration;
   string director;
-  int releaseDate;
-  string Prented;
-  int rentDate;
+  string releaseDate;
+  string rentTo;
+  string rentOn;
+  string status;
 };
 
 int main()
@@ -58,10 +59,13 @@ int main()
         Movie[nline].releaseDate = stoi(word);
         break;
       case 6:
-        Movie[nline].Prented = word;
+        Movie[nline].rentTo = word;
         break;
       case 7:
-        Movie[nline].rentDate = stoi(word);
+        Movie[nline].rentOn = word;
+        break;
+      case 8:
+        Movie[nline].status = word;
         break;
       }
       count++;
@@ -73,7 +77,7 @@ int main()
   for (int i = 0; i < nline; i++)
   {
     cout << Movie[nline].id << ' ' << Movie[nline].name << ' ' << Movie[nline].Genre << ' ' << Movie[nline].duration << ' '
-         << Movie[nline].director << ' ' << Movie[nline].releaseDate << ' ' << Movie[nline].Prented << ' ' << Movie[nline].rentDate << endl;
+         << Movie[nline].director << ' ' << Movie[nline].releaseDate << ' ' << Movie[nline].rentTo << ' ' << Movie[nline].rentOn << ' ' << Movie[nline].status << endl;
   }
 
   infile.close();
