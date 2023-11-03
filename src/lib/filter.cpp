@@ -195,38 +195,41 @@ void Filter(Movie movies[], int n, int size)
     }while((filter == 1) || (filter == 2) || (filter == 3) || (filter == 4) || (filter == 5) || (filter == 6));
 }
 
-void RentMovie(Movie movies[], int n) {
-    int id;
-    string clientName;
+void AddMovie(Movie movies[], int& n) {
+    if (n < 1500) {
+        int id, duration;
+        string name, genres, director, releaseDate, rentTo = "", rentOn = "", status = "Available";
 
-    cout << "Enter the ID of the movie to rent: ";
-    cin >> id;
+        cout << "Enter the ID of the movie: ";
+        cin >> id;
+        cout << "Enter the name of the movie: ";
+        cin.ignore();
+        getline(cin, name);
+        cout << "Enter the genres (comma-separated): ";
+        getline(cin, genres);
+        cout << "Enter the duration of the movie: ";
+        cin >> duration;
+        cout << "Enter the director of the movie: ";
+        cin.ignore();
+        getline(cin, director);
+        cout << "Enter the release date (YYYY-MM-DD): ";
+        cin >> releaseDate;
 
-    if (id >= 1 && id <= n) {
-        if (movies[id - 1].status == "Available") {
-            cout << "Enter your name: ";
-            cin.ignore();
-            getline(cin, clientName);
+        Movie newMovie = {id, name, genres, duration, director, releaseDate, rentTo, rentOn, status};
+        movies[n++] = newMovie;
+        n++;
 
-            movies[id - 1].rentTo = clientName;
-            movies[id - 1].status = "Rented";
+        ofstream outFile("movies.csv", ios::app);
+        outFile << id << "," << name << "," << genres << "," << duration << "," << director << "," << releaseDate << ","
+                << rentTo << "," << rentOn << "," << status << endl;
+        outFile.close();
 
-            ofstream outFile("movies.csv");
-            for (int i = 0; i < n; i++) {
-                outFile << movies[i].id << "," << movies[i].name << "," << movies[i].Genre << ","
-                        << movies[i].duration << "," << movies[i].director << "," << movies[i].releaseDate << ","
-                        << movies[i].rentTo << "," << movies[i].rentOn << "," << movies[i].status << endl;
-            }
-            outFile.close();
-
-            cout << "Movie rented successfully to " << clientName << endl;
-        } else {
-            cout << "Movie is not available for rent." << endl;
-        }
+        cout << "Movie added successfully!" << endl;
     } else {
-        cout << "Invalid movie ID." << endl;
+        cout << "The maximum number of movies has been reached." << endl;
     }
 }
+
 
 
 void RentMovie(Movie movies[], int n) {
