@@ -1,5 +1,5 @@
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <string>
 
 using namespace std;
@@ -17,7 +17,7 @@ extern const bool applyBgColor = true;     // Add Customed Background Color
 extern const bool applyFgColor = true;     // Add Customed Foreground Color
 
 // - Size of the Title
-extern const int nWp = 90; // If the string length is smaller, it'll be filled with whitespaces
+extern const int nChar = 90; // If the string length is smaller, it'll be filled with whitespaces
 
 // --- Color Command Created Using the ralvarezdev's Minigrep Version. URL:https://github.com/ralvarezdev/minigrep
 
@@ -44,5 +44,5 @@ void printTitle(string message, bool applySgrBgCmd, bool applySgrFgCmd, bool war
   if (applySgrFgCmd)
     sgrCmd.append((!warning) ? sgrFgCmd : sgrFgCmdError);
 
-  cout << sgrCmd << setw(nWp) << setfill(' ') << left << message << reset << '\n';
+  cout << sgrCmd << setw(nChar) << setfill(' ') << left << message << reset << '\n';
 }

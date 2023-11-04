@@ -1,5 +1,5 @@
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <string>
 #include "ansiEsc.h"
 #include "data.h"
@@ -396,7 +396,7 @@ int main(int argc, char **argv)
       howToUseViewMovies();
       break;
     case cmdHowToUseFilterMovies:
-      howToUseFilterMovies;
+      howToUseFilterMovies();
       break;
     case cmdHowToUseSearchClient:
       howToUseSearchClient();

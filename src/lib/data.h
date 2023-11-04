@@ -6,7 +6,7 @@ using namespace std;
 extern char *cmdsPtr, *subCmdsPtr, *fieldsCmdsPtr, *clientCmdsPtr, *sortByCmdsPtr;
 extern const string clear, tab1;
 extern const bool applyBgColor, applyFgColor;
-extern const int nWp;
+extern const int nChar;
 
 #ifndef DATA_H
 #define DATA_H
