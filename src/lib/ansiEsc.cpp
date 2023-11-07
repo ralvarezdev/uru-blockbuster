@@ -1,6 +1,5 @@
 #include <iomanip>
 #include <iostream>
-#include <string>
 
 using namespace std;
 
@@ -17,13 +16,13 @@ extern const bool applyBgColor = true;     // Add Customed Background Color
 extern const bool applyFgColor = true;     // Add Customed Foreground Color
 
 // - Size of the Title
-extern const int nChar = 90; // If the string length is smaller, it'll be filled with whitespaces
+extern const int nChar = 100; // If the string length is smaller, it'll be filled with whitespaces
 
 // --- Color Command Created Using the ralvarezdev's Minigrep Version. URL:https://github.com/ralvarezdev/minigrep
 
 // - Normal State
-const string sgrBgCmd = "\x1b[48;2;24;100;171m"; // Command to Change the Text Background Color
-const string sgrFgCmd = "\x1b[38;2;255;212;59m"; // Command to Change the Text Foreground Color
+extern const string sgrBgCmd = "\x1b[48;2;24;100;171m"; // Command to Change the Text Background Color
+extern const string sgrFgCmd = "\x1b[38;2;255;212;59m"; // Command to Change the Text Foreground Color
 
 // - Warning (On Error)
 const string sgrBgCmdError = "\x1b[48;2;224;49;49m";

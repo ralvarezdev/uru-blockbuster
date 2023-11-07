@@ -1,30 +1,24 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <string>
 #include <typeinfo>
 #include "ansiEsc.h"
 #include "data.h"
 #include "input.h"
+#include "readFile.h"
 
 using namespace std;
-
-// --- Structs
-
-// - Client
-struct Client
-{
-  int id;
-  string name;
-  int accountNumber;
-};
 
 // --- Extern Variables and Constants Definition
 char cmdsChar[cmdEnd] = {'a', 'r', 's', 'v', 'f', 'c', 'F', 'S', 'C', 'x', 'y', 'z', 'A', 'h', 'e'};
 char subCmdsChar[subCmdEnd] = {'f', 's'};
-char fieldCmdsChar[fieldEnd] = {'d', 'D', 'g', 'i', 'p', 'r', '.'};
+char fieldCmdsChar[fieldEnd] = {'i', 't', 'd', 'g', 'D', 'p', 'r', 's', 'R', 'c', '.'};
 char clientCmdsChar[clientEnd] = {'i', 'n', 'a'};
 char sortByCmdsChar[sortByEnd] = {'d', 'D', 'i', 'I', 'p', 'P', 'r', 'R', 't', 'T'}; // Lowercase for Ascending Order, Uppercase for Descending
+string genreStr[genreEnd] = {"Action", "Adventure", "Animation", "Children", "Comedy",
+                             "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir",
+                             "Horror", "Mistery", "Musical", "Romance", "Sci-Fi",
+                             "Thriller", "War", "Western", "(no genres listed)", "ERROR"};
 
 // --- Extern Variables and Constants Assignment
 char *cmdsPtr = cmdsChar;
@@ -32,15 +26,18 @@ char *subCmdsPtr = subCmdsChar;
 char *fieldCmdsPtr = fieldCmdsChar;
 char *clientCmdsPtr = clientCmdsChar;
 char *sortByCmdsPtr = sortByCmdsChar;
+string *genrePtr = genreStr;
 
 // --- Global Constants
 const int paramPerLine = 3;                                 // Number of Parameters Printed by Line
 const int maxSpacing = 4;                                   // If the Maximum Number Characters is Reached this is the Spacing between Paratemeters
 const int nCharTitle = 30;                                  // Number of Characters of the Parameter Title Printed
 const int nCharParam = (nChar - nCharTitle) / paramPerLine; // Number of Maximum Characters per Parameter
+const int nMovies = 10000;                                  // Max Number of Movies
 
 // --- Global Variables
-string fieldCmdsStr[fieldEnd] = {"Director", "Duration", "Genre", "Id", "Price", "Release"};
+string fieldCmdsStr[fieldEnd - 1] = {"Id", "Title", "Director", "Genre", "Min", "Price",
+                                     "Release", "Rented", "Rent On", "Rent To"};
 string clientCmdsStr[clientEnd] = {"Id", "Name", "Account Number"};
 string sortByCmdsStr[sortByEnd] = {"Duration", "Id", "Price", "Release Date", "Title"};
 
@@ -67,8 +64,8 @@ int isCharOnArray(char character, char array[], int n);
 void addMovie();
 void rentMovie();
 void movieStatus();
-void viewMovies(bool fields[], int m, char sortBy[], int n);
-void filterMovies(string **fieldParams, int l, int m, char *sortBy, int n);
+void viewMovies(bool fields[], int m, int sortBy[], int n);
+void filterMovies(string **fieldParams, int l, int m, int sortBy[], int n);
 void searchClient(string **clientParams, int m, int n);
 void validParameters(int nCharTitle);
 void fields();
@@ -81,7 +78,8 @@ void howToUseSearchClient();
 void addClient();
 void printArray(string *params, int m, string paramTitle);
 void print2DArray(string **params, int m, int n, string paramsTitle[]);
-int getSortByStr(char sortBy[], string sortByStr[], int n);
+void printMovies(Movie *movies, int m, bool *fields, int n);
+int getSortByStr(int sortBy[], string sortByStr[], int n);
 
 // --- Functions
 
@@ -114,11 +112,11 @@ void movieStatus()
 }
 
 // Function to View Movies
-void viewMovies(bool fields[], int m, char sortBy[], int n)
+void viewMovies(bool fields[], int m, int sortBy[], int n)
 {
   string fieldsStr[m - 1], sortByStr[n], applied;
 
-  if (fields[fieldAll] == true)
+  if (fields[fieldAll])
     for (int i = 0; i < m - 1; i++)
       fields[i] = true;
 
@@ -139,10 +137,18 @@ void viewMovies(bool fields[], int m, char sortBy[], int n)
   pressEnterToContinue("Press ENTER to Continue", false);
 
   // Parameter with Highest Priority: None
+
+  Movie *movies = new Movie[nMovies];
+
+  int nMoviesRead = getMovies(movies, nMovies, fields, m); // Get Movies
+  sortMovies(movies, sortBy, sortByEnd);                   // Sort Movies
+  printMovies(movies, nMoviesRead, fields, m);             // Print Movies
+
+  delete[] movies; // Deallocate memory
 }
 
 // Function to Filter Movies
-void filterMovies(string **fieldParams, int l, int m, char *sortBy, int n)
+void filterMovies(string **fieldParams, int l, int m, int sortBy[], int n)
 {
   string sortByStr[n];
 
@@ -394,27 +400,121 @@ void print2DArray(string **params, int m, int n, string paramsTitle[])
   }
 }
 
-// Function to Get a String Array from a Char Array of the Sort By Commands that will be Applied to the Movies
-int getSortByStr(char sortBy[], string sortByStr[], int n)
+// Function to Print Movies
+void printMovies(Movie *movies, int m, bool *fields, int n)
+{
+  const int nId = 5;       // Number of Characters for Id
+  const int nDuration = 4; // ... for Duration
+  const int nPrice = 8;    // ... for Price
+  const int nGenre = 11;   // ... for Genres
+  const int nYear = 4;
+  const int nMonth = 2;
+  const int nDay = 2;
+  const int nSep = 1;                                 // ... for Separator after Dates
+  const int nDate = nYear + nMonth + nDay + 2 + nSep; // ... for Release Date and Rent On
+  const int nStatus = 7;                              // ... for Rent Status
+  const int nRentTo = 8;                              // ... for Rent to Client (Id)
+  const int nDirector = 15;                           // ... for Director Name
+  int nTitle = nChar;                                 // Decrease the Number of Characters Used by Rent-Related fields
+
+  // Number of Characters per Field
+  int fieldsNChar[fieldEnd - 1] = {nId, 0, nDirector, nGenre, nDuration, nPrice,
+                                   nDate, nStatus, nDate, nRentTo};
+
+  for (int i = 0; i < n; i++)
+    if (fields[i] && i != fieldName)
+      nTitle -= fieldsNChar[i]; // Decrease Number of Characters for Movie's Name FIeld
+
+  fieldsNChar[fieldName] = nTitle; // Assign Number of Characters for Movie's Name
+
+  cout << clear << sgrBgCmd << sgrFgCmd;
+  for (int i = 0; i < fieldEnd - 1; i++)
+    if (fields[i])
+      cout << setw(fieldsNChar[i]) << setfill(' ') << fieldCmdsStr[i]; // Field Title
+  cout << reset << '\n';
+
+  // Print Movies
+  int *date;
+  string title, director;
+
+  for (int i = 0; i < m; i++)
+  {
+    if (fields[fieldId])
+      cout << setw(nId) << setfill(' ') << left << movies[i].id;
+
+    if (fields[fieldName])
+      if (movies[i].name.length() < nTitle)
+        cout << setw(nTitle) << setfill(' ') << left << movies[i].name;
+      else
+        cout << movies[i].name.substr(0, nTitle - 4) << left << "... ";
+
+    if (fields[fieldDirector])
+    {
+      director = movies[i].director[0];     // Assign First Name
+      director += ' ';                      // Insert Whitespace
+      director += movies[i].director[1][0]; // Insert First Character of Last Name
+
+      cout << setw(nDirector) << setfill(' ') << left << director;
+    }
+
+    // Genre
+    if (fields[fieldGenre])
+      cout << string(nGenre, ' ');
+
+    if (fields[fieldDuration])
+      cout << setw(nDuration) << setfill(' ') << left << movies[i].duration;
+
+    if (fields[fieldPrice])
+      cout << '$' << setw(nPrice - 1) << setfill(' ') << left << movies[i].price;
+
+    if (fields[fieldRelease])
+    {
+      date = movies[i].releaseDate;
+      cout << setw(nYear) << setfill('0') << right << date[0] << '-'
+           << setw(nMonth) << setfill('0') << right << date[1] << '-'
+           << setw(nDay) << setfill('0') << right << date[2] << string(nSep, ' ');
+    }
+
+    if (fields[fieldStatus])
+      if (!movies[i].rentStatus)
+        cout << setw(nStatus) << setfill(' ') << left << "No";
+      else
+      {
+        date = movies[i].rentOn;
+        cout << setw(nStatus) << setfill(' ') << "Yes"
+             << setw(nYear) << setfill(' ') << right << date[0]
+             << '-' << setw(nMonth) << setfill(' ') << right << date[1]
+             << '-' << setw(nDay) << setfill(' ') << right << date[2]
+             << string(nSep, ' ')
+             << setw(nRentTo) << setfill(' ') << left << movies[i].rentTo;
+      }
+    cout << '\n';
+  }
+  pressEnterToContinue("Press ENTER to Continue", false);
+}
+
+// Function to Get a String Array from a Int Array of the Sort By Commands that will be Applied to the Movies
+int getSortByStr(int sortBy[], string sortByStr[], int n)
 {
   bool nullParam;
-  int nParams = 0;
-  string order, temp;
+  int charIndex, nParams = 0;
+  string order;
 
   for (int j = 0; j < n; j++)
   {
+    charIndex = sortBy[j];
     nullParam = false;
 
-    if (isupper(sortBy[j]))
-      order = "[D] ";
-    else if (islower(sortBy[j]))
-      order = "[A] ";
-    else
+    if (charIndex == -1)
       nullParam = true;
+    else if (isupper(sortByCmdsChar[charIndex]))
+      order = "[D] ";
+    else
+      order = "[A] ";
 
     if (!nullParam)
     {
-      sortByStr[nParams] = order.append(sortByCmdsStr[j]); // Data to Print in the Sort By Parameters Row
+      sortByStr[nParams] = order.append(sortByCmdsStr[charIndex / 2]); // Data to Print in the Sort By Parameters Row
       nParams++;
     }
   }

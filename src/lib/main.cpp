@@ -1,6 +1,5 @@
-#include <iomanip>
 #include <iostream>
-#include <string>
+#include <filesystem>
 #include "ansiEsc.h"
 #include "data.h"
 #include "input.h"
@@ -26,8 +25,8 @@ const int maxParamPerSubCmd = 6; // Max Number of Parameters per Subcommand
 // - View Movies Command Parameters
 struct ViewMoviesCmd
 {
-  bool params[fieldEnd];      // 1D Array to Save the Fields to Show in View Movies
-  char sortBy[sortByEnd / 2]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+  bool params[fieldEnd];     // 1D Array to Save the Fields to Show in View Movies
+  int sortBy[sortByEnd / 2]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
 };
 
 // - Filter Movies Command Parameters
@@ -36,7 +35,7 @@ struct FilterMoviesCmd
   string params[fieldEnd][maxParamPerSubCmd]; // 2D String Array of Field Parameters
   string *paramsPtr[fieldEnd];                // 1D Pointer Array to to the 2D Array
   int counter[fieldEnd];                      // Filter Movies Field Parameters Counter
-  char sortBy[sortByEnd / 2];                 // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+  int sortBy[sortByEnd / 2];                  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
 };
 
 // - Search Client Command Parameters
@@ -68,6 +67,7 @@ struct CmdIndex
 // --- Function Prototypes
 void helpMessage();
 void initPtrArray(string **ptrArray, string array[][maxParamPerSubCmd], int arrayCounter[], int n);
+void changeCwdToData(string path);
 
 int main(int argc, char **argv)
 {
@@ -82,6 +82,9 @@ int main(int argc, char **argv)
   int timesExec = 0;                      // Number of times the Main While Loop has been executed
   int isCmd = validCmd;                   // Used for Checking if the Command is Valid or Not. If not, it Stores the Reason
   string inputLine, inputWord, inputLong; // Saves the Input of the User, before being Processed by the Program
+
+  // Change Current Working Path to 'src/data'
+  changeCwdToData(argv[0]); // Change Current Working Directory
 
   // Main While Loop of the Program
   while (!exit)
@@ -177,10 +180,18 @@ int main(int argc, char **argv)
       if (isViewMoviesCmd)
       { // Initialize viewMovies Sruct
         viewMoviesCmd = ViewMoviesCmd();
+        fill(viewMoviesCmd.sortBy, viewMoviesCmd.sortBy + sortByEnd, -1); // Initialize Sort By Array
+
+        /*
+        int indexFieldTrue[4] = {fieldName, fieldStatus, fieldRentOn, fieldRentTo}; // Fields that are Always Printed in the Terminal
+        for (int i = 0; i < sizeof(indexFieldTrue) / sizeof(indexFieldTrue[0]); i++)
+          viewMoviesCmd.params[indexFieldTrue[i]] = true;
+        */
       }
       else if (!isSearchClientCmd)
       { // Initialize filterMovies Struct
         filterMoviesCmd = FilterMoviesCmd();
+        fill(filterMoviesCmd.sortBy, filterMoviesCmd.sortBy + sortByEnd, -1); // Initialize Sort By Array
         initPtrArray(filterMoviesCmd.paramsPtr, filterMoviesCmd.params, filterMoviesCmd.counter, fieldEnd);
       }
       else
@@ -247,9 +258,9 @@ int main(int argc, char **argv)
             }
 
             if (isViewMoviesCmd) // It will Overwrite the Previous Sorting for this Parameter, if it was Specified
-              viewMoviesCmd.sortBy[index.param / 2] = cmd.param;
+              viewMoviesCmd.sortBy[index.param / 2] = index.param;
             else
-              filterMoviesCmd.sortBy[index.param / 2] = cmd.param;
+              filterMoviesCmd.sortBy[index.param / 2] = index.param;
           }
           continue;
         }
@@ -281,12 +292,12 @@ int main(int argc, char **argv)
             if (isViewMoviesCmd)
             {
               viewMoviesCmd.params[index.field] = true;
-              getline(stream, inputWord, ' '); // Get the Next Argument
 
-              if (inputWord[0] == '-' && inputWord.length() < 3) // It's a Subcommand
-                moreInput = true;
-              else if (inputWord[0] != '-' && inputWord.length() > 0)
-                isField = true;
+              if (getline(stream, inputWord, ' '))                 // Get the Next Argument
+                if (inputWord[0] == '-' && inputWord.length() < 3) // It's a Subcommand
+                  moreInput = true;
+                else if (inputWord[0] != '-' && inputWord.length() > 0)
+                  isField = true;
 
               continue;
             }
@@ -336,8 +347,10 @@ int main(int argc, char **argv)
             *paramCounter += 1; // Parameter Counter
           }
 
-          while (!isField && !moreInput && getline(stream, inputWord, ' ')) // Reached Max Number of Parameters for Command
-            if (inputWord[0] == '-')                                        // Got a Command
+          while (!isField && !moreInput) // Reached Max Number of Parameters for Command
+            if (!getline(stream, inputWord, ' '))
+              break;
+            else if (inputWord[0] == '-') // Got a Command
               if (inputWord.length() < 3 && !isSearchClientCmd)
                 moreInput = true;
               else if (inputWord.length() > 2)
@@ -449,4 +462,14 @@ void initPtrArray(string **ptrArray, string array[][maxParamPerSubCmd], int arra
     ptrArray[i] = array[i];
     arrayCounter[i] = 0;
   }
+}
+
+// Function to Change Current Working Directory to 'src/data'
+void changeCwdToData(string path)
+{
+  filesystem::path mainPath = path.substr(0, path.length() - 13); // Path to Main Folder
+  filesystem::path dataDir = "src/data";
+  filesystem::path dataPath = mainPath / dataDir; // Concatenate mainPath with Data Dir
+
+  filesystem::current_path(dataPath); // Chenge cwd to '.../src/data'
 }

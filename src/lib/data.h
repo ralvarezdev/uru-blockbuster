@@ -4,25 +4,13 @@ using namespace std;
 
 // --- Extern Variables Declaration
 extern char *cmdsPtr, *subCmdsPtr, *fieldsCmdsPtr, *clientCmdsPtr, *sortByCmdsPtr;
-extern const string clear, tab1;
+extern string *genrePtr;
+extern const string clear, reset, tab1, sgrBgCmd, sgrFgCmd;
 extern const bool applyBgColor, applyFgColor;
 extern const int nChar;
 
 #ifndef DATA_H
 #define DATA_H
-
-// --- Structs
-struct Movie
-{
-  int id;
-  string name;
-  string Genre;
-  int duration;
-  string director;
-  int releaseDate;
-  string Prented;
-  int rentDate;
-};
 
 // --- Global Variables
 
@@ -61,12 +49,16 @@ enum subCmds
 // Typed Right After the Field
 enum cmdFields
 {
-  fieldDirector,
-  fieldDuration,
-  fieldGenre,
   fieldId,
+  fieldName,
+  fieldDirector,
+  fieldGenre,
+  fieldDuration,
   fieldPrice,
   fieldRelease,
+  fieldStatus,
+  fieldRentOn,
+  fieldRentTo,
   fieldAll,
   fieldEnd // To get the number of Fields. SHOULD BE AT THE END
 };
@@ -103,8 +95,8 @@ int isCharOnArray(char character, char array[], int n);
 void addMovie();
 void rentMovie();
 void movieStatus();
-void viewMovies(bool fields[], int m, char sortBy[], int n);
-void filterMovies(string **fieldParams, int l, int m, char *sortBy, int n);
+void viewMovies(bool fields[], int m, int sortBy[], int n);
+void filterMovies(string **fieldParams, int l, int m, int sortBy[], int n);
 void searchClient(string **clientParams, int m, int n);
 void fields(); // As a Parameter or as a Subcommand
 void sortByParameters();
