@@ -177,6 +177,10 @@ int main(int argc, char **argv)
       bool isViewMoviesCmd = (index.main == cmdViewMovies);     // Boolean to Check if the Current Command is View Movies
       bool isSearchClientCmd = (index.main == cmdSearchClient); // To Shorten the If-Else Statements
 
+      int sortByOrder[sortByEnd / 2], sortByCounter = 0; // Save Sorting Order
+      for (int i = 0; i < sortByEnd / 2; i++)
+        sortByOrder[i] = -1;
+
       if (isViewMoviesCmd)
       { // Initialize viewMovies Sruct
         viewMoviesCmd = ViewMoviesCmd();
@@ -257,10 +261,20 @@ int main(int argc, char **argv)
               break;
             }
 
-            if (isViewMoviesCmd) // It will Overwrite the Previous Sorting for this Parameter, if it was Specified
+            if (isViewMoviesCmd)
+            { // It will Overwrite the Previous Sorting for this Parameter, if it was Specified
+              if (viewMoviesCmd.sortBy[index.param / 2] != -1)
+                sortByOrder[sortByCounter++] = index.param;
+
               viewMoviesCmd.sortBy[index.param / 2] = index.param;
+            }
             else
+            {
+              if (filterMoviesCmd.sortBy[index.param / 2] != -1)
+                sortByOrder[sortByCounter++] = index.param;
+
               filterMoviesCmd.sortBy[index.param / 2] = index.param;
+            }
           }
           continue;
         }
@@ -360,6 +374,13 @@ int main(int argc, char **argv)
                   isField = true;
         }
       }
+
+      for (int i = 0; i < sortByEnd / 2; i++) // Save the Sort By Array based on the Order they were Introduced
+        if (sortByOrder[i] != -1)
+          if (isViewMoviesCmd)
+            viewMoviesCmd.sortBy[i] = sortByOrder[i];
+          else if (!isSearchClientCmd)
+            filterMoviesCmd.sortBy[i] = sortByOrder[i];
 
       if (isCmd == validCmd)
       {

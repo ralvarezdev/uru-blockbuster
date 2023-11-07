@@ -7,6 +7,9 @@
 
 using namespace std;
 
+// --- Extern Variables and Constants Definition
+extern const int nMaxGenres = 5; // Max Number of Genres Per Movie
+
 // --- Global Variables
 int nMoviesRead; // Number of Movies that had been Read and Copied from movies.csv
 
@@ -43,8 +46,7 @@ int getMovies(Movie movies[], int m, bool fields[], int n)
 
     while (getline(infile, line))
     {
-      for (int i = 0; i < genreEnd; i++)
-        genres[i] = -1;
+      fill(genres, genres + genreEnd, -1); // Initialize Genres Array
 
       stringstream file(line);
 
@@ -60,10 +62,9 @@ int getMovies(Movie movies[], int m, bool fields[], int n)
             movies[nline].name = word;
             break;
           case 2:
-            getGenres(word, genres, genreEnd);
+            getGenres(word, genres, nMaxGenres);
             for (int i = 0; i < genreEnd; i++)
-              if (genres[i] != -1)
-                movies[nline].genres[i] = genres[i];
+              movies[nline].genres[i] = genres[i];
             break;
           case 3:
             movies[nline].duration = stoi(word);

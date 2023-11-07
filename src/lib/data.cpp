@@ -17,7 +17,7 @@ char clientCmdsChar[clientEnd] = {'i', 'n', 'a'};
 char sortByCmdsChar[sortByEnd] = {'d', 'D', 'i', 'I', 'p', 'P', 'r', 'R', 't', 'T'}; // Lowercase for Ascending Order, Uppercase for Descending
 string genreStr[genreEnd] = {"Action", "Adventure", "Animation", "Children", "Comedy",
                              "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir",
-                             "Horror", "Mistery", "Musical", "Romance", "Sci-Fi",
+                             "Horror", "Mystery", "Musical", "Romance", "Sci-Fi",
                              "Thriller", "War", "Western", "(no genres listed)", "ERROR"};
 
 // --- Extern Variables and Constants Assignment
@@ -80,6 +80,7 @@ void printArray(string *params, int m, string paramTitle);
 void print2DArray(string **params, int m, int n, string paramsTitle[]);
 void printMovies(Movie *movies, int m, bool *fields, int n);
 int getSortByStr(int sortBy[], string sortByStr[], int n);
+void printDate(int date[], int nYear, int nMonth, int nDay, int nSep);
 
 // --- Functions
 
@@ -143,6 +144,7 @@ void viewMovies(bool fields[], int m, int sortBy[], int n)
   int nMoviesRead = getMovies(movies, nMovies, fields, m); // Get Movies
   sortMovies(movies, sortBy, sortByEnd);                   // Sort Movies
   printMovies(movies, nMoviesRead, fields, m);             // Print Movies
+  pressEnterToContinue("Press ENTER to Continue", false);
 
   delete[] movies; // Deallocate memory
 }
@@ -374,7 +376,7 @@ void printArray(string *params, int n, string paramTitle)
     param = params[i];
 
     if (i % paramPerLine == 0 && i != 0)
-      cout << '\n' // Break the Line, and Add Some Indentation if there's more than 3 Parameters on the Current Line
+      cout << '\n' // Break the Line, and Add Some Indentation if there's more than N Parameters on the Current Line
            << string(nCharTitle, ' ');
 
     if (param.length() <= nCharParam - maxSpacing)
@@ -403,10 +405,12 @@ void print2DArray(string **params, int m, int n, string paramsTitle[])
 // Function to Print Movies
 void printMovies(Movie *movies, int m, bool *fields, int n)
 {
-  const int nId = 5;       // Number of Characters for Id
-  const int nDuration = 4; // ... for Duration
-  const int nPrice = 8;    // ... for Price
-  const int nGenre = 11;   // ... for Genres
+  const int nPerGenre = 3; // Number of Character Per Genre
+
+  const int nId = 5;                          // Number of Characters for Id
+  const int nDuration = 4;                    // ... for Duration
+  const int nPrice = 8;                       // ... for Price
+  const int nGenre = (nPerGenre + 1) * 4 + 1; // ... for Genres
   const int nYear = 4;
   const int nMonth = 2;
   const int nDay = 2;
@@ -439,58 +443,79 @@ void printMovies(Movie *movies, int m, bool *fields, int n)
 
   for (int i = 0; i < m; i++)
   {
+    // Id
     if (fields[fieldId])
-      cout << setw(nId) << setfill(' ') << left << movies[i].id;
+      cout << setw(nId) << setfill(' ') << movies[i].id;
 
+    // Title
     if (fields[fieldName])
       if (movies[i].name.length() < nTitle)
-        cout << setw(nTitle) << setfill(' ') << left << movies[i].name;
+        cout << setw(nTitle) << setfill(' ') << movies[i].name;
       else
-        cout << movies[i].name.substr(0, nTitle - 4) << left << "... ";
+        cout << movies[i].name.substr(0, nTitle - 4) << "... ";
 
+    // Director
     if (fields[fieldDirector])
     {
       director = movies[i].director[0];     // Assign First Name
       director += ' ';                      // Insert Whitespace
       director += movies[i].director[1][0]; // Insert First Character of Last Name
 
-      cout << setw(nDirector) << setfill(' ') << left << director;
+      cout << setw(nDirector) << setfill(' ') << director;
     }
 
     // Genre
     if (fields[fieldGenre])
-      cout << string(nGenre, ' ');
-
-    if (fields[fieldDuration])
-      cout << setw(nDuration) << setfill(' ') << left << movies[i].duration;
-
-    if (fields[fieldPrice])
-      cout << '$' << setw(nPrice - 1) << setfill(' ') << left << movies[i].price;
-
-    if (fields[fieldRelease])
     {
-      date = movies[i].releaseDate;
-      cout << setw(nYear) << setfill('0') << right << date[0] << '-'
-           << setw(nMonth) << setfill('0') << right << date[1] << '-'
-           << setw(nDay) << setfill('0') << right << date[2] << string(nSep, ' ');
-    }
-
-    if (fields[fieldStatus])
-      if (!movies[i].rentStatus)
-        cout << setw(nStatus) << setfill(' ') << left << "No";
+      if (movies[i].genres[0] == noneGenre)
+        cout << string(nGenre - 1, '-'); // No Genre
       else
       {
-        date = movies[i].rentOn;
-        cout << setw(nStatus) << setfill(' ') << "Yes"
-             << setw(nYear) << setfill(' ') << right << date[0]
-             << '-' << setw(nMonth) << setfill(' ') << right << date[1]
-             << '-' << setw(nDay) << setfill(' ') << right << date[2]
-             << string(nSep, ' ')
-             << setw(nRentTo) << setfill(' ') << left << movies[i].rentTo;
+        string genres, genre;
+        bool firstIter = true; // First Iteration
+
+        for (int j = 0; j < nMaxGenres && movies[i].genres[j] != -1; j++)
+        {
+          if (!firstIter)
+            genre = ',';
+          else
+            firstIter = false;
+
+          genre.append(genreStr[movies[i].genres[j]].substr(0, nPerGenre)); // Substract the First N Characters
+          genres.append(genre);
+        }
+
+        if (genres.length() < nGenre)
+          cout << setw(nGenre) << setfill(' ') << genres;
+        else
+          cout << setw(nGenre - 4) << setfill(' ') << genres.substr(0, nGenre - 4) << "... ";
+      }
+    }
+
+    // Duration
+    if (fields[fieldDuration])
+      cout << setw(nDuration) << setfill(' ') << movies[i].duration;
+
+    // Price
+    if (fields[fieldPrice])
+      cout << '$' << setw(nPrice - 1) << setfill(' ') << movies[i].price;
+
+    // Release Date
+    if (fields[fieldRelease])
+      printDate(movies[i].releaseDate, nYear, nMonth, nDay, nSep);
+
+    // Rent Status
+    if (fields[fieldStatus])
+      if (!movies[i].rentStatus)
+        cout << setw(nStatus) << setfill(' ') << "No";
+      else
+      {
+        cout << setw(nStatus) << setfill(' ') << "Yes";
+        printDate(movies[i].rentOn, nYear, nMonth, nDay, nSep);
+        cout << setw(nRentTo) << setfill(' ') << left << movies[i].rentTo;
       }
     cout << '\n';
   }
-  pressEnterToContinue("Press ENTER to Continue", false);
 }
 
 // Function to Get a String Array from a Int Array of the Sort By Commands that will be Applied to the Movies
@@ -519,4 +544,12 @@ int getSortByStr(int sortBy[], string sortByStr[], int n)
     }
   }
   return nParams;
+}
+
+// Function to Print Dates
+void printDate(int date[], int nYear, int nMonth, int nDay, int nSep)
+{
+  cout << setw(nYear) << setfill('0') << right << date[0] << '-'
+       << setw(nMonth) << setfill('0') << date[1] << '-'
+       << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ') << left;
 }

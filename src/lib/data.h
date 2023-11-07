@@ -7,7 +7,7 @@ extern char *cmdsPtr, *subCmdsPtr, *fieldsCmdsPtr, *clientCmdsPtr, *sortByCmdsPt
 extern string *genrePtr;
 extern const string clear, reset, tab1, sgrBgCmd, sgrFgCmd;
 extern const bool applyBgColor, applyFgColor;
-extern const int nChar;
+extern const int nChar, nMaxGenres;
 
 #ifndef DATA_H
 #define DATA_H
