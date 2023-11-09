@@ -10,22 +10,22 @@
 using namespace std;
 
 // --- Extern Variables and Constants Definition
-char cmdsChar[cmdEnd] = {'a', 'r', 's', 'v', 'f', 'c', 'F', 'S', 'C', 'x', 'y', 'z', 'A', 'h', 'e'};
-char subCmdsChar[subCmdEnd] = {'f', 's'};
-char fieldCmdsChar[fieldEnd] = {'i', 't', 'd', 'g', 'D', 'p', 'r', 's', 'R', 'c', '.'};
-char clientCmdsChar[clientEnd] = {'i', 'n', 'a'};
-char sortByCmdsChar[sortByEnd] = {'d', 'D', 'i', 'I', 'p', 'P', 'r', 'R', 't', 'T'}; // Lowercase for Ascending Order, Uppercase for Descending
+int cmdsChar[cmdEnd] = {'a', 'r', 's', 'v', 'f', 'c', 'F', 'S', 'C', 'x', 'y', 'z', 'A', 'h', 'e'};
+int subCmdsChar[subCmdEnd] = {'f', 's'};
+int fieldCmdsChar[fieldEnd] = {'i', 't', 'd', 'g', 'D', 'p', 'r', 's', 'R', 'c', '.'};
+int clientCmdsChar[clientEnd] = {'i', 'n', 'a'};
+int sortByCmdsChar[sortByEnd] = {'d', 'D', 'i', 'I', 'p', 'P', 'r', 'R', 't', 'T'}; // Lowercase for Ascending Order, Uppercase for Descending
 string genreStr[genreEnd] = {"Action", "Adventure", "Animation", "Children", "Comedy",
                              "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir",
                              "Horror", "Mystery", "Musical", "Romance", "Sci-Fi",
                              "Thriller", "War", "Western", "(no genres listed)", "ERROR"};
 
 // --- Extern Variables and Constants Assignment
-char *cmdsPtr = cmdsChar;
-char *subCmdsPtr = subCmdsChar;
-char *fieldCmdsPtr = fieldCmdsChar;
-char *clientCmdsPtr = clientCmdsChar;
-char *sortByCmdsPtr = sortByCmdsChar;
+int *cmdsPtr = cmdsChar;
+int *subCmdsPtr = subCmdsChar;
+int *fieldCmdsPtr = fieldCmdsChar;
+int *clientCmdsPtr = clientCmdsChar;
+int *sortByCmdsPtr = sortByCmdsChar;
 string *genrePtr = genreStr;
 
 // --- Global Constants
@@ -49,8 +49,8 @@ string addBrackets(T message)
 {
   string addedBrackets;
 
-  if (typeid(T) == typeid(const char)) // Checks if it's a Char
-    addedBrackets += message;          // Works fine it Message is a Char
+  if (typeid(T) == typeid(const int)) // Checks if it's a Char
+    addedBrackets += message;         // Works fine it Message is a Char
   else
     addedBrackets = message; // Message is of type String´
 
@@ -60,7 +60,7 @@ string addBrackets(T message)
 }
 
 // --- Function Prototypes
-int isCharOnArray(char character, char array[], int n);
+int isCharOnArray(int character, int array[], int n);
 void addMovie();
 void rentMovie();
 void movieStatus();
@@ -85,13 +85,11 @@ void printDate(int date[], int nYear, int nMonth, int nDay, int nSep);
 // --- Functions
 
 // Function to check if the Character is on Char Array
-int isCharOnArray(char character, char array[], int n)
+int isCharOnArray(int character, int array[], int n)
 {
   for (int i = 0; i < n; i++)
-  {
     if (array[i] == character)
       return i;
-  }
   return -1;
 }
 

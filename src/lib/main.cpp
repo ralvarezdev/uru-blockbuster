@@ -1,3 +1,7 @@
+#ifdef _WIN32 // For Windows
+#include <windows.h>
+#endif
+
 #include <iostream>
 #include <filesystem>
 #include "ansiEsc.h"
@@ -15,7 +19,7 @@ That's the reason why the program is written like this
 // --- Extern Variables and Constants Declaration
 extern const string clear, tab1;
 extern const bool applyBgColor, applyFgColor;
-extern char *cmdsPtr, *subCmdsPtr, *fieldCmdsPtr, *clientCmdsPtr, *sortByCmdsPtr;
+extern int *cmdsPtr, *subCmdsPtr, *fieldCmdsPtr, *clientCmdsPtr, *sortByCmdsPtr;
 
 // --- Global variables
 const int maxParamPerSubCmd = 6; // Max Number of Parameters per Subcommand
@@ -68,9 +72,13 @@ struct CmdIndex
 void helpMessage();
 void initPtrArray(string **ptrArray, string array[][maxParamPerSubCmd], int arrayCounter[], int n);
 void changeCwdToData(string path);
+void winSetChcpUtf8();
 
 int main(int argc, char **argv)
 {
+  winSetChcpUtf8();                 // Change Codepage While Running the Program to UTF-8  if it's Running in Windows
+  std::ios::sync_with_stdio(false); // Desynchronize C++ Streams from C I/O Operations to Increase Performance
+
   ViewMoviesCmd viewMoviesCmd; // Used to Save the Parameters Typed by the User for the given Command
   FilterMoviesCmd filterMoviesCmd;
   SearchClientCmd searchClientCmd;
@@ -453,26 +461,26 @@ void helpMessage()
   cout << clear;
   printTitle("WELCOME TO BLOCKBUSTER", applyBgColor, applyFgColor, false);
   cout << "Database Manipulation Commands\n"
-       << tab1 << "[" << cmdsPtr[cmdAddMovie] << "] Add Movie\n"
-       << tab1 << "[" << cmdsPtr[cmdRentMovie] << "] Rent Movie\n"
+       << tab1 << addBrackets(cmdsPtr[cmdAddMovie]) << " Add Movie\n"
+       << tab1 << addBrackets(cmdsPtr[cmdRentMovie]) << " Rent Movie\n"
        << "Database Search Commands:\n"
-       << tab1 << "[" << cmdsPtr[cmdMovieStatus] << "] Movie Status\n"
-       << tab1 << "[" << cmdsPtr[cmdViewMovies] << "] View Movies\n"
-       << tab1 << "[" << cmdsPtr[cmdFilterMovies] << "] Filter Movies\n"
-       << tab1 << "[" << cmdsPtr[cmdSearchClient] << "] Search Client\n"
+       << tab1 << addBrackets(cmdsPtr[cmdMovieStatus]) << " Movie Status\n"
+       << tab1 << addBrackets(cmdsPtr[cmdViewMovies]) << " View Movies\n"
+       << tab1 << addBrackets(cmdsPtr[cmdFilterMovies]) << " Filter Movies\n"
+       << tab1 << addBrackets(cmdsPtr[cmdSearchClient]) << " Search Client\n"
        << "Command Parameters:\n"
-       << tab1 << "[" << cmdsPtr[cmdFieldParameters] << "] Movie Field Parameters\n"
-       << tab1 << "[" << cmdsPtr[cmdSortByParameters] << "] Sort By Parameters\n"
-       << tab1 << "[" << cmdsPtr[cmdClientParameters] << "] Search Client Parameters\n"
+       << tab1 << addBrackets(cmdsPtr[cmdFieldParameters]) << " Movie Field Parameters\n"
+       << tab1 << addBrackets(cmdsPtr[cmdSortByParameters]) << " Sort By Parameters\n"
+       << tab1 << addBrackets(cmdsPtr[cmdClientParameters]) << " Search Client Parameters\n"
        << "How-To:\n"
-       << tab1 << "[" << cmdsPtr[cmdHowToUseViewMovies] << "] How to Use the View Movie Command\n"
-       << tab1 << "[" << cmdsPtr[cmdHowToUseFilterMovies] << "] How to Use the Filter Movie Command\n"
-       << tab1 << "[" << cmdsPtr[cmdHowToUseSearchClient] << "] How to Use the Search Client Command\n"
+       << tab1 << addBrackets(cmdsPtr[cmdHowToUseViewMovies]) << " How to Use the View Movie Command\n"
+       << tab1 << addBrackets(cmdsPtr[cmdHowToUseFilterMovies]) << " How to Use the Filter Movie Command\n"
+       << tab1 << addBrackets(cmdsPtr[cmdHowToUseSearchClient]) << " How to Use the Search Client Command\n"
        << "Other Commands:\n"
-       << tab1 << "[" << cmdsPtr[cmdHelp] << "] Help\n"
-       << tab1 << "[" << cmdsPtr[cmdExit] << "] Exit\n"
+       << tab1 << addBrackets(cmdsPtr[cmdHelp]) << " Help\n"
+       << tab1 << addBrackets(cmdsPtr[cmdExit]) << " Exit\n"
        << "Admin Privileges:\n"
-       << tab1 << "[" << cmdsPtr[cmdAddClient] << "] Add Client\n";
+       << tab1 << addBrackets(cmdsPtr[cmdAddClient]) << " Add Client\n";
 }
 
 // Function to Assign 2D Array to 1D Pointer, and Reset the Counters
@@ -493,4 +501,12 @@ void changeCwdToData(string path)
   filesystem::path dataPath = mainPath / dataDir; // Concatenate mainPath with Data Dir
 
   filesystem::current_path(dataPath); // Chenge cwd to '.../src/data'
+}
+
+// Function to Set CMD Terminal Codepage to UTF-8 if the OS is Windows
+void winSetChcpUtf8()
+{
+#ifdef _WIN32                  // For Windows
+  SetConsoleOutputCP(CP_UTF8); // Set console code page to UTF-8 so console known how to interpret string data
+#endif
 }

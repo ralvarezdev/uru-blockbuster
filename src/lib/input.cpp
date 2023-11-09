@@ -5,18 +5,20 @@
 using namespace std;
 
 // --- Function Prototypes
-void ignoreInput();
+// void ignoreInput();
 void wrongCommand(int cmdStatus);
 void pressEnterToContinue(string message, bool warning);
 
 // --- Functions
 
+/*
 // This prevents the program to crash if there's more input
 void ignoreInput()
 {
   while (getchar() != '\n')
     cin.clear();
 }
+*/
 
 // Function to Check if the Command Entered by the User is Correct
 void wrongCommand(int cmdStatus)
@@ -53,6 +55,9 @@ void wrongCommand(int cmdStatus)
 // Function to Stop the Program Flow while the User doesn't press the ENTER key
 void pressEnterToContinue(string message, bool warning)
 {
+  string temp;
+
   printTitle(message, applyBgColor, applyFgColor, warning);
-  ignoreInput();
+  getline(cin, temp);
+  // ignoreInput();
 }

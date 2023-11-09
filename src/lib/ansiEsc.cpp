@@ -31,8 +31,6 @@ const string sgrFgCmdError = "\x1b[38;2;255;212;59m";
 // --- Function Prototypes
 void printTitle(string message, bool applySgrBgCmd, bool applySgrFgCmd, bool warning);
 
-// --- Functions
-
 // Function to Print Title with Customed Colors
 void printTitle(string message, bool applySgrBgCmd, bool applySgrFgCmd, bool warning)
 {

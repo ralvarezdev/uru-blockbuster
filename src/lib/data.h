@@ -3,7 +3,7 @@
 using namespace std;
 
 // --- Extern Variables Declaration
-extern char *cmdsPtr, *subCmdsPtr, *fieldsCmdsPtr, *clientCmdsPtr, *sortByCmdsPtr;
+extern int *cmdsPtr, *subCmdsPtr, *fieldsCmdsPtr, *clientCmdsPtr, *sortByCmdsPtr;
 extern string *genrePtr;
 extern const string clear, reset, tab1, sgrBgCmd, sgrFgCmd;
 extern const bool applyBgColor, applyFgColor;
@@ -90,8 +90,12 @@ enum sortByCmds
   sortByEnd // To get the number of Sort By Commands. SHOULD BE AT THE END
 };
 
+// --- Templates
+template <typename T>
+string addBrackets(T message);
+
 // --- Functions
-int isCharOnArray(char character, char array[], int n);
+int isCharOnArray(int character, int array[], int n);
 void addMovie();
 void rentMovie();
 void movieStatus();
