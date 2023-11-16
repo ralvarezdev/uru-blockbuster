@@ -1,14 +1,23 @@
+/*
 #ifdef _WIN32 // For Windows
 #include <windows.h>
 #endif
+*/
 
 #include <iostream>
 #include <filesystem>
-#include "ansiEsc.h"
-#include "data.h"
-#include "input.h"
+#include "lib\namespaces.h"
+#include "lib\clients\clientsOp.h"
+#include "lib\movies\moviesOp.h"
+#include "lib\data\dataOp.h"
+#include "lib\terminal\ansiEsc.h"
+#include "lib\terminal\input.h"
 
 using namespace std;
+using namespace clients;
+using namespace commands;
+using namespace movies;
+using namespace terminal;
 
 /*
 --- NOTES
@@ -16,67 +25,24 @@ using namespace std;
 That's the reason why the program is written like this
 */
 
-// --- Extern Variables and Constants Declaration
-extern const string clear, tab1;
-extern const bool applyBgColor, applyFgColor;
-extern int *cmdsPtr, *subCmdsPtr, *fieldCmdsPtr, *clientCmdsPtr, *sortByCmdsPtr;
+// --- Extern Variables Declaration (ASSIGNMENT AT THE END OF THIS FILE)
+extern int *cmdsPtr, *subCmdsPtr, *movieFieldCmdsPtr, *clientFieldCmdsPtr, *movieSortByCmdsPtr, *clientSortByCmdsPtr;
+extern string *movieFieldCmdsStrPtr, *clientFieldCmdsStrPtr, *movieSortByCmdsStrPtr, *clientSortByCmdsStrPtr, *genrePtr;
 
-// --- Global variables
-const int maxParamPerSubCmd = 6; // Max Number of Parameters per Subcommand
-
-// --- Structs
-
-// - View Movies Command Parameters
-struct ViewMoviesCmd
-{
-  bool params[fieldEnd];     // 1D Array to Save the Fields to Show in View Movies
-  int sortBy[sortByEnd / 2]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
-};
-
-// - Filter Movies Command Parameters
-struct FilterMoviesCmd
-{
-  string params[fieldEnd][maxParamPerSubCmd]; // 2D String Array of Field Parameters
-  string *paramsPtr[fieldEnd];                // 1D Pointer Array to to the 2D Array
-  int counter[fieldEnd];                      // Filter Movies Field Parameters Counter
-  int sortBy[sortByEnd / 2];                  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
-};
-
-// - Search Client Command Parameters
-struct SearchClientCmd
-{
-  string params[clientEnd][maxParamPerSubCmd]; // 2D String Array of Clients Parameters
-  string *paramsPtr[clientEnd];                // 1D Pointer Array to to the 2D Array
-  int counter[clientEnd];
-};
-
-// - Command
-struct Cmd
-{ // Command, SubCommand, Field, Parameter
-  int main;
-  int sub;
-  int field;
-  int param;
-};
-
-// - Command Indexes
-struct CmdIndex
-{ // Used to Save the Index of the Command on its Corresponding Array
-  int main = 0;
-  int sub = 0;
-  int field = 0;
-  int param = 0;
-};
+// --- Global Variables
+int nMoviesRead = 0;  // Number of Movies that had been Read and Copied from movies.csv
+int nClientsRead = 0; // Number of Clients that had been Read and Copied from clients.csv
 
 // --- Function Prototypes
 void helpMessage();
 void initPtrArray(string **ptrArray, string array[][maxParamPerSubCmd], int arrayCounter[], int n);
 void changeCwdToData(string path);
-void winSetChcpUtf8();
+// void winSetChcpUtf8();
 
+// Main Function
 int main(int argc, char **argv)
 {
-  winSetChcpUtf8();                 // Change Codepage While Running the Program to UTF-8  if it's Running in Windows
+  // winSetChcpUtf8();                 // Change Codepage While Running the Program to UTF-8  if it's Running in Windows
   std::ios::sync_with_stdio(false); // Desynchronize C++ Streams from C I/O Operations to Increase Performance
 
   ViewMoviesCmd viewMoviesCmd; // Used to Save the Parameters Typed by the User for the Given Command
@@ -88,13 +54,20 @@ int main(int argc, char **argv)
   bool exit = false;                      // Tells the Program if the User wants to Exit the Program
   bool moreInput, isField;                // Boolean to Check if there's More Input
   int timesExec = 0;                      // Number of times the Main While Loop has been executed
-  int isCmd = validCmd;                   // Used for Checking if the Command is Valid or Not. If not, it Stores the Reason
+  cmdStatus isCmd = validCmd;             // Used for Checking if the Command is Valid or Not. If not, it Stores the Reason
   string inputLine, inputWord, inputLong; // Saves the Input of the User, before being Processed by the Program
 
   changeCwdToData(argv[0]); // Change Current Working Path to 'src/data'
 
+  Movie *movies = new Movie[nMovies]; // Allocate Memory
+  nMoviesRead = getMovies(movies);    // Get Movies
+
+  Client *clients = new Client[nClients]; // Allocate Memory
+  nClientsRead = getClients(clients);     // Get Clients
+
   while (!exit) // Main While Loop of the Program
   {
+    cmd = Cmd();        // Initialize Command Structure to 0
     index = CmdIndex(); // Initialize Command Indexes to 0
 
     if (isCmd != validCmd)
@@ -176,35 +149,33 @@ int main(int argc, char **argv)
     if (index.main == -1) // If it's not a Valid Command
       isCmd = wrongMainCmd;
     else if (index.main == cmdViewMovies || index.main == cmdFilterMovies || index.main == cmdSearchClient)
-    {                                                           // Checks if the Filter or View Movies Command is Typed Correctly
+    {                                                           // Checks if the Filter, View Movies or Search Clients Command is Typed Correctly
       bool isViewMoviesCmd = (index.main == cmdViewMovies);     // Boolean to Check if the Current Command is View Movies
       bool isSearchClientCmd = (index.main == cmdSearchClient); // To Shorten the If-Else Statements
 
-      int sortByOrder[sortByEnd / 2], sortByCounter = 0; // Save Sorting Order
-      for (int i = 0; i < sortByEnd / 2; i++)
+      int nSortBy = (isSearchClientCmd) ? movieSortByEnd : clientSortByEnd / 2; // Number of Possible Sort By Commands that can be Applied at the Same Time
+
+      int sortByOrder[nSortBy]; // Save Sorting Order
+      int sortByCounter = 0;
+
+      for (int i = 0; i < nSortBy / 2; i++)
         sortByOrder[i] = -1;
 
       if (isViewMoviesCmd)
       { // Initialize viewMovies Sruct
         viewMoviesCmd = ViewMoviesCmd();
-        fill(viewMoviesCmd.sortBy, viewMoviesCmd.sortBy + sortByEnd, -1); // Initialize Sort By Array
-
-        /*
-        int indexFieldTrue[4] = {fieldName, fieldStatus, fieldRentOn, fieldRentTo}; // Fields that are Always Printed in the Terminal
-        for (int i = 0; i < sizeof(indexFieldTrue) / sizeof(indexFieldTrue[0]); i++)
-          viewMoviesCmd.params[indexFieldTrue[i]] = true;
-        */
+        fill(viewMoviesCmd.sortBy, viewMoviesCmd.sortBy + movieSortByEnd, -1); // Initialize Sort By Array
       }
       else if (!isSearchClientCmd)
       { // Initialize filterMovies Struct
         filterMoviesCmd = FilterMoviesCmd();
-        fill(filterMoviesCmd.sortBy, filterMoviesCmd.sortBy + sortByEnd, -1); // Initialize Sort By Array
-        initPtrArray(filterMoviesCmd.paramsPtr, filterMoviesCmd.params, filterMoviesCmd.counter, fieldEnd);
+        fill(filterMoviesCmd.sortBy, filterMoviesCmd.sortBy + movieSortByEnd, -1); // Initialize Sort By Array
+        initPtrArray(filterMoviesCmd.paramsPtr, filterMoviesCmd.params, filterMoviesCmd.counter, movieFieldEnd);
       }
       else
       { // Initialize searchClient Struct
         searchClientCmd = SearchClientCmd();
-        initPtrArray(searchClientCmd.paramsPtr, searchClientCmd.params, searchClientCmd.counter, clientEnd);
+        initPtrArray(searchClientCmd.paramsPtr, searchClientCmd.params, searchClientCmd.counter, clientFieldEnd);
       }
 
       while (true)
@@ -231,15 +202,15 @@ int main(int argc, char **argv)
         if (isSearchClientCmd)
         { // Check if the Client Field is in the Array of Client Commands
           cmd.field = inputWord[2];
-          index.field = isCharOnArray(cmd.field, clientCmdsPtr, clientEnd);
+          index.field = isCharOnArray(cmd.field, clientFieldCmdsPtr, clientFieldEnd);
         }
         else
-        { // Check if the Command is i the Array of subCommands
+        { // Check if the Command is in the Array of subCommands
           cmd.sub = inputWord[1];
           index.sub = isCharOnArray(cmd.sub, subCmdsPtr, subCmdEnd);
         }
 
-        if (inputWord[0] != '-' || index.sub == -1 || index.field == -1)
+        if (index.sub == -1 || index.field == -1)
         { // Wrong  Command
           isCmd = (isSearchClientCmd) ? wrongSearchClientCmd : wrongSubCmd;
           break;
@@ -256,7 +227,10 @@ int main(int argc, char **argv)
             }
 
             cmd.param = inputWord[0];
-            index.param = isCharOnArray(cmd.param, sortByCmdsPtr, sortByEnd); // Check if the Command is in the Sort By Array
+            if (isSearchClientCmd)
+              index.param = isCharOnArray(cmd.param, clientSortByCmdsPtr, clientSortByEnd); // Check if the Command is in the Sort By Array
+            else
+              index.param = isCharOnArray(cmd.param, movieSortByCmdsPtr, movieSortByEnd);
 
             if (index.param == -1)
             { // Wrong Sort By Command Parameter
@@ -298,9 +272,9 @@ int main(int argc, char **argv)
             }
 
             cmd.field = (isViewMoviesCmd) ? inputWord[0] : inputWord[2];
-            index.field = isCharOnArray(cmd.field, fieldCmdsPtr, fieldEnd); // Check if the Command is in the Field Parameters Array
+            index.field = isCharOnArray(cmd.field, movieFieldCmdsPtr, movieFieldEnd); // Check if the Command is in the Field Parameters Array
 
-            if (index.field == -1 || (!isViewMoviesCmd && index.field == fieldAll))
+            if (index.field == -1 || (!isViewMoviesCmd && index.field == movieFieldAll))
             { // Wrong Field Parameter or Field Command
               isCmd = (isViewMoviesCmd) ? wrongFieldParam : wrongField;
               break;
@@ -351,10 +325,8 @@ int main(int argc, char **argv)
                 isField = true;
               break;
             }
-            else if (inputWord.length() == 0)
-            { // To Prevent Adding Whitespaces as Parameters-
+            else if (inputWord.length() == 0) // To Prevent Adding Whitespaces as Parameters-
               continue;
-            }
 
             if (isSearchClientCmd) // Add Parameter to Search Client
               searchClientCmd.params[index.field][*paramCounter] = inputWord;
@@ -378,7 +350,7 @@ int main(int argc, char **argv)
         }
       }
 
-      for (int i = 0; i < sortByEnd / 2; i++) // Save the Sort By Array based on the Order they were Introduced
+      for (int i = 0; i < nSortBy; i++) // Save the Sort By Array based on the Order they were Introduced
         if (sortByOrder[i] != -1)
           if (isViewMoviesCmd)
             viewMoviesCmd.sortBy[i] = sortByOrder[i];
@@ -386,20 +358,18 @@ int main(int argc, char **argv)
             filterMoviesCmd.sortBy[i] = sortByOrder[i];
 
       if (isCmd == validCmd)
-      {
         switch (index.main)
         {
         case cmdViewMovies:
-          viewMovies(viewMoviesCmd.params, fieldEnd, viewMoviesCmd.sortBy, sortByEnd / 2);
+          viewMovies(movies, nMoviesRead, viewMoviesCmd.params, viewMoviesCmd.sortBy);
           break;
         case cmdFilterMovies:
-          filterMovies(filterMoviesCmd.paramsPtr, fieldEnd - 1, maxParamPerSubCmd, filterMoviesCmd.sortBy, sortByEnd / 2);
+          filterMovies(movies, nMoviesRead, filterMoviesCmd.paramsPtr, filterMoviesCmd.sortBy);
           break;
         case cmdSearchClient:
-          searchClient(searchClientCmd.paramsPtr, clientEnd, maxParamPerSubCmd);
+          searchClient(searchClientCmd.paramsPtr);
           break;
         }
-      }
     }
 
     if (isCmd != validCmd)
@@ -412,13 +382,13 @@ int main(int argc, char **argv)
     switch (index.main)
     {
     case cmdAddMovie:
-      addMovie();
+      addMovie(movies, &nMoviesRead);
       break;
     case cmdRentMovie:
-      rentMovie();
+      rentMovie(movies, nMoviesRead, clients, &nClientsRead);
       break;
     case cmdMovieStatus:
-      movieStatus();
+      getMovieStatus(movies, nMoviesRead);
       break;
     case cmdFieldParameters:
       fields();
@@ -439,13 +409,16 @@ int main(int argc, char **argv)
       howToUseSearchClient();
       break;
     case cmdAddClient:
-      addClient();
+      addClient(clients, &nClientsRead);
       break;
     case cmdExit:
       exit = true;
       break;
     }
   }
+
+  delete[] movies; // Deallocate memory
+  delete[] clients;
 }
 
 // --- Functions
@@ -491,13 +464,23 @@ void initPtrArray(string **ptrArray, string array[][maxParamPerSubCmd], int arra
 // Function to Change Current Working Directory to 'src/data'
 void changeCwdToData(string path)
 {
-  filesystem::path mainPath = path.substr(0, path.length() - 13); // Path to Main Folder
-  filesystem::path dataDir = "src/data";
-  filesystem::path dataPath = mainPath / dataDir; // Concatenate mainPath with Data Dir
+  try
+  {
+    filesystem::path mainPath = path;                                // Path to main.exe
+    filesystem::path binPath = mainPath.parent_path().parent_path(); // Path to Main Folder
 
-  filesystem::current_path(dataPath); // Change cwd to '.../src/data'
+    filesystem::path dataDir = "src/data";
+    filesystem::path dataPath = binPath / dataDir; // Concatenate binPath with DataDir to get the FUll Path to the .csv Files
+
+    filesystem::current_path(dataPath); // Change cwd to '.../src/data'
+  }
+  catch (...)
+  {
+    pressEnterToCont("Error: Executable File is not Inside 'bin' Folder", true);
+  }
 }
 
+/*
 // Function to Set CMD Terminal Codepage to UTF-8 if the OS is Windows
 void winSetChcpUtf8()
 {
@@ -505,3 +488,44 @@ void winSetChcpUtf8()
   SetConsoleOutputCP(CP_UTF8); // Set Console Codepage to UTF-8 so Console knows how to Interpret String Data
 #endif
 }
+*/
+
+// --- Extern Variables and Constants Definition
+
+// Lowercase for Ascending Order, Uppercase for Descending
+int cmdsChar[cmdEnd] = {'a', 'r', 's', 'v', 'f', 'c', 'F', 'S', 'C', 'x', 'y', 'z', 'A', 'h', 'e'};
+int subCmdsChar[subCmdEnd] = {'f', 's'};
+int movieFieldCmdsChar[movieFieldEnd] = {'i', 't', 'd', 'g', 'D', 'p', 'r', 's', 'R', 'c', '.'};
+int clientFieldCmdsChar[clientFieldEnd] = {'i', 'n', 'a'};
+int movieSortByCmdsChar[movieSortByEnd] = {'d', 'D', 'i', 'I', 'p', 'P', 'r', 'R', 't', 'T'};
+int clientSortByCmdsChar[clientSortByEnd] = {'i', 'I', 'n', 'N'};
+
+// Command Title
+string movieFieldCmdsStr[movieFieldEnd - 1] = {"Id", "Title", "Director", "Genre", "Min", "Price",
+                                               "Release", "Rented", "Rent On", "Rent To"};
+string clientFieldCmdsStr[clientFieldEnd] = {"Id", "Name", "Account Number"};
+
+string movieSortByCmdsStr[movieSortByEnd] = {"Duration", "Id", "Price", "Release Date", "Title"};
+string clientSortByCmdsStr[movieSortByEnd] = {"Id", "Name"};
+
+// Genres
+string genreStr[genreEnd] = {"Action", "Adventure", "Animation", "Children", "Comedy",
+                             "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir",
+                             "Horror", "IMAX", "Mystery", "Musical", "Romance", "Sci-Fi",
+                             "Thriller", "War", "Western", "(no genres listed)", "ERROR"};
+
+// --- Extern Variables and Constants Assignment
+int *cmdsPtr = cmdsChar;
+int *subCmdsPtr = subCmdsChar;
+int *movieFieldCmdsPtr = movieFieldCmdsChar;
+int *clientFieldCmdsPtr = clientFieldCmdsChar;
+int *movieSortByCmdsPtr = movieSortByCmdsChar;
+int *clientSortByCmdsPtr = clientSortByCmdsChar;
+
+string *movieFieldCmdsStrPtr = movieFieldCmdsStr;
+string *clientFieldCmdsStrPtr = clientFieldCmdsStr;
+
+string *movieSortByCmdsStrPtr = movieSortByCmdsStr;
+string *clientSortByCmdsStrPtr = clientSortByCmdsStr;
+
+string *genrePtr = genreStr;
