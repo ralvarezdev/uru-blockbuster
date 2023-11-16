@@ -100,10 +100,14 @@ void addMovie()
   cout << "a";
 }
 
+// TO DEVELOP
+
 void rentMovie()
 {
   cout << "r";
 }
+
+// TO DEVELOP
 
 void movieStatus()
 {
@@ -164,6 +168,8 @@ void filterMovies(string **fieldParams, int l, int m, int sortBy[], int n)
 
   pressEnterToContinue("Press ENTER to Continue", false);
 }
+
+// TO DEVELOP
 
 // Function to Search Client
 void searchClient(string **clientParams, int m, int n)
@@ -305,6 +311,8 @@ void howToUseSearchClient()
   cout << '\n';
   pressEnterToContinue("Press ENTER to Continue", false);
 }
+
+// TO DEVELOP
 
 void addClient()
 {

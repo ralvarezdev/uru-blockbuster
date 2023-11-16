@@ -59,16 +59,6 @@ struct Client
   int accountNumber; // CLient Account Number
 };
 
-// - Merge Iterators
-struct MergeIter
-{
-  int *i;
-  int *j;
-  int *k;
-  int mid;
-  int high;
-};
-
 #ifndef READ_FILE_H
 #define READ_FILE_H
 

@@ -22,11 +22,6 @@ void sortMovies(Movie *movies, int sortBy[], int n);
 void moviesMergeSort(Movie *movies, int n, int sortByIndex);
 void moviesMerge(Movie *movies, Movie *sorted, int low, int mid, int high, int sortByIndex);
 // string getLower(string word);
-void sortByDuration(Movie *movies, Movie *sorted, MergeIter mergeIter);
-void sortById(Movie *movies, Movie *sorted, MergeIter mergeIter);
-void sortByPrice(Movie *movies, Movie *sorted, MergeIter mergeIter);
-void sortByRelease(Movie *movies, Movie *sorted, MergeIter mergeIter);
-void sortByTitle(Movie *movies, Movie *sorted, MergeIter mergeIter);
 
 // Function to Get an Array of Movies from movies.csv
 int getMovies(Movie movies[], int m, bool fields[], int n)
@@ -212,145 +207,85 @@ void moviesMergeSort(Movie *movies, int n, int sortByIndex)
 void moviesMerge(Movie *movies, Movie *sorted, int low, int mid, int high, int sortByIndex)
 {
   int i = low, j = mid + 1, k = low;
-  MergeIter mergeIter = {&i, &j, &k, mid, high};
+  string firstTitle, secondTitle; // Used when Sorting the Array by Title
+  bool op;                        // Boolean Operator
 
   switch (sortByIndex / 2)
   {
   case sortByDurationA / 2:
-    sortByDuration(movies, sorted, mergeIter);
+    while (i <= mid && j <= high)
+      if (movies[i].duration < movies[j].duration)
+        sorted[k++] = movies[i++];
+      else
+        sorted[k++] = movies[j++];
     break;
+
   case sortByIdA / 2:
-    sortById(movies, sorted, mergeIter);
+    while (i <= mid && j <= high)
+      if (movies[i].id < movies[j].id)
+        sorted[k++] = movies[i++];
+      else
+        sorted[k++] = movies[j++];
     break;
+
   case sortByPriceA / 2:
-    sortByPrice(movies, sorted, mergeIter);
+    while (i <= mid && j <= high)
+      if (movies[i].price < movies[j].price)
+        sorted[k++] = movies[i++];
+      else
+        sorted[k++] = movies[j++];
     break;
-  case sortByReleaseA / 2:
-    sortByRelease(movies, sorted, mergeIter);
-    break;
+
   case sortByTitleA / 2:
-    sortByTitle(movies, sorted, mergeIter);
+    while (i <= mid && j <= high)
+    {
+      firstTitle = movies[i].name;
+      secondTitle = movies[j].name;
+
+      if (firstTitle.compare(secondTitle) < 0)
+        sorted[k++] = movies[i++];
+      else
+        sorted[k++] = movies[j++];
+    }
     break;
+
+  case sortByReleaseA / 2:
+    while (i <= mid && j <= high)
+    {
+      if (movies[i].releaseDate[0] != movies[j].releaseDate[0])
+        op = movies[i].releaseDate[0] > movies[j].releaseDate[0];
+      else if (movies[i].releaseDate[1] != movies[j].releaseDate[1])
+        op = movies[i].releaseDate[1] > movies[j].releaseDate[1];
+      else if (movies[i].releaseDate[2] != movies[j].releaseDate[2])
+        op = (movies[i].releaseDate[2] > movies[j].releaseDate[2]);
+      else
+        op = false;
+
+      if (op)
+        sorted[k++] = movies[i++];
+      else
+        sorted[k++] = movies[j++];
+      break;
+    }
+
+    while (i <= mid)
+      sorted[k++] = movies[i++];
+    while (j <= high)
+      sorted[k++] = movies[j++];
+
+    for (i = low; i <= high; i++)
+      movies[i] = sorted[i];
   }
 
-  while (i <= mid)
-    sorted[k++] = movies[i++];
-  while (j <= high)
-    sorted[k++] = movies[j++];
-
-  for (i = low; i <= high; i++)
-    movies[i] = sorted[i];
-}
-
-/*
-// Function to Get a Lowercase String
-string getLower(string word)
-{
-  string wordToLower;
-
-  for (int i = 0; i < word.length(); i++)
-    wordToLower += tolower(word[i]); // Append Character in Lowercase
-
-  return wordToLower;
-}
-*/
-
-// - Sort By Functions
-
-void sortByDuration(Movie *movies, Movie *sorted, MergeIter mergeIter)
-{
-  int *i = mergeIter.i, *j = mergeIter.j, *k = mergeIter.k;
-  int x = *i, y = *j, z = *k;
-
-  while (x <= mergeIter.mid && y <= mergeIter.high)
-    if (movies[x].duration < movies[y].duration)
-      sorted[z++] = movies[x++];
-    else
-      sorted[z++] = movies[y++];
-
-  *i = x;
-  *j = y;
-  *k = z;
-}
-
-void sortById(Movie *movies, Movie *sorted, MergeIter mergeIter)
-{
-  int *i = mergeIter.i, *j = mergeIter.j, *k = mergeIter.k;
-  int x = *i, y = *j, z = *k;
-
-  while (x <= mergeIter.mid && y <= mergeIter.high)
-    if (movies[x].id < movies[y].id)
-      sorted[z++] = movies[x++];
-    else
-      sorted[z++] = movies[y++];
-
-  *i = x;
-  *j = y;
-  *k = z;
-}
-
-void sortByPrice(Movie *movies, Movie *sorted, MergeIter mergeIter)
-{
-  int *i = mergeIter.i, *j = mergeIter.j, *k = mergeIter.k;
-  int x = *i, y = *j, z = *k;
-
-  while (x <= mergeIter.mid && y <= mergeIter.high)
-    if (movies[x].price < movies[y].price)
-      sorted[z++] = movies[x++];
-    else
-      sorted[z++] = movies[y++];
-
-  *i = x;
-  *j = y;
-  *k = z;
-}
-
-void sortByRelease(Movie *movies, Movie *sorted, MergeIter mergeIter)
-{
-  int *i = mergeIter.i, *j = mergeIter.j, *k = mergeIter.k;
-  int x = *i, y = *j, z = *k;
-  bool op;
-
-  while (x <= mergeIter.mid && y <= mergeIter.high)
+  /*
+  // Function to Get a Lowercase String
+  string getLower(string word)
   {
-    if (movies[x].releaseDate[0] != movies[y].releaseDate[0])
-      op = movies[x].releaseDate[0] > movies[y].releaseDate[0];
-    else if (movies[x].releaseDate[1] != movies[y].releaseDate[1])
-      op = movies[x].releaseDate[1] > movies[y].releaseDate[1];
-    else if (movies[x].releaseDate[2] != movies[y].releaseDate[2])
-      op = (movies[x].releaseDate[2] > movies[y].releaseDate[2]);
-    else
-      op = false;
+    string wordToLower;
 
-    if (op)
-      sorted[z++] = movies[x++];
-    else
-      sorted[z++] = movies[y++];
+    for (int i = 0; i < word.length(); i++)
+      wordToLower += tolower(word[i]); // Append Character in Lowercase
+
+    return wordToLower;
   }
-
-  *i = x;
-  *j = y;
-  *k = z;
-}
-
-void sortByTitle(Movie *movies, Movie *sorted, MergeIter mergeIter)
-{
-  int *i = mergeIter.i, *j = mergeIter.j, *k = mergeIter.k;
-  int x = *i, y = *j, z = *k;
-  string firstTitle, secondTitle;
-
-  while (x <= mergeIter.mid && y <= mergeIter.high)
-  {
-    firstTitle = movies[x].name;
-    secondTitle = movies[y].name;
-
-    if (firstTitle.compare(secondTitle) < 0)
-      sorted[z++] = movies[x++];
-    else
-      sorted[z++] = movies[y++];
-  }
-
-  *i = x;
-  *j = y;
-  *k = z;
-}
+  */

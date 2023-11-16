@@ -53,10 +53,10 @@ struct SearchClientCmd
 // - Command
 struct Cmd
 { // Command, SubCommand, Field, Parameter
-  char main;
-  char sub;
-  char field;
-  char param;
+  int main;
+  int sub;
+  int field;
+  int param;
 };
 
 // - Command Indexes
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
   winSetChcpUtf8();                 // Change Codepage While Running the Program to UTF-8  if it's Running in Windows
   std::ios::sync_with_stdio(false); // Desynchronize C++ Streams from C I/O Operations to Increase Performance
 
-  ViewMoviesCmd viewMoviesCmd; // Used to Save the Parameters Typed by the User for the given Command
+  ViewMoviesCmd viewMoviesCmd; // Used to Save the Parameters Typed by the User for the Given Command
   FilterMoviesCmd filterMoviesCmd;
   SearchClientCmd searchClientCmd;
   Cmd cmd;
@@ -91,11 +91,9 @@ int main(int argc, char **argv)
   int isCmd = validCmd;                   // Used for Checking if the Command is Valid or Not. If not, it Stores the Reason
   string inputLine, inputWord, inputLong; // Saves the Input of the User, before being Processed by the Program
 
-  // Change Current Working Path to 'src/data'
-  changeCwdToData(argv[0]); // Change Current Working Directory
+  changeCwdToData(argv[0]); // Change Current Working Path to 'src/data'
 
-  // Main While Loop of the Program
-  while (!exit)
+  while (!exit) // Main While Loop of the Program
   {
     index = CmdIndex(); // Initialize Command Indexes to 0
 
@@ -133,12 +131,11 @@ int main(int argc, char **argv)
         inputWord = argv[i];
         size_t found = inputWord.find(' '); // Check if the string contains Whitespaces
 
-        // Whitespace Found
-        if (found != string::npos) // Insert a Double Quote at the Beginning and the End of the Input
-          inputWord.insert(0, 1, '"').insert(inputWord.length(), 1, '"');
+        if (found != string::npos)                                        // Whitespace Found
+          inputWord.insert(0, 1, '"').insert(inputWord.length(), 1, '"'); // Insert a Double Quote at the Beginning and the End of the Input
 
-        if (i != argc - 1) // Insert Whitespace between Parameters
-          inputWord.insert(inputWord.length(), 1, ' ');
+        if (i != argc - 1)
+          inputWord.insert(inputWord.length(), 1, ' '); // Insert Whitespace between Parameters
 
         inputLine.append(inputWord); // Append the Parameter
       }
@@ -176,10 +173,8 @@ int main(int argc, char **argv)
     cmd.main = inputWord[0];
     index.main = isCharOnArray(cmd.main, cmdsPtr, cmdEnd); // Check if the Command is in the Array of Main Commands. Returns -1 if it doesn't exist
 
-    if (index.main == -1)
-    { // If it's not a Valid Command
+    if (index.main == -1) // If it's not a Valid Command
       isCmd = wrongMainCmd;
-    }
     else if (index.main == cmdViewMovies || index.main == cmdFilterMovies || index.main == cmdSearchClient)
     {                                                           // Checks if the Filter or View Movies Command is Typed Correctly
       bool isViewMoviesCmd = (index.main == cmdViewMovies);     // Boolean to Check if the Current Command is View Movies
@@ -500,13 +495,13 @@ void changeCwdToData(string path)
   filesystem::path dataDir = "src/data";
   filesystem::path dataPath = mainPath / dataDir; // Concatenate mainPath with Data Dir
 
-  filesystem::current_path(dataPath); // Chenge cwd to '.../src/data'
+  filesystem::current_path(dataPath); // Change cwd to '.../src/data'
 }
 
 // Function to Set CMD Terminal Codepage to UTF-8 if the OS is Windows
 void winSetChcpUtf8()
 {
 #ifdef _WIN32                  // For Windows
-  SetConsoleOutputCP(CP_UTF8); // Set console code page to UTF-8 so console known how to interpret string data
+  SetConsoleOutputCP(CP_UTF8); // Set Console Codepage to UTF-8 so Console knows how to Interpret String Data
 #endif
 }

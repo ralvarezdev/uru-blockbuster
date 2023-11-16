@@ -26,7 +26,7 @@ enum cmdStatus
 };
 
 // --- Functions
-void ignoreInput();
+// void ignoreInput();
 void wrongCommand(int cmdStatus);
 void pressEnterToContinue(string message, bool warning);
 
