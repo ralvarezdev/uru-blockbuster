@@ -1,5 +1,5 @@
-#include <iostream>
 #include "ansiEsc.h"
+#include <iostream>
 #include "..\namespaces.h"
 
 using namespace std;
@@ -15,6 +15,7 @@ void wrongCommand(cmdStatus cmdStatus);
 void wrongMovieData(invalidMovie wrongData);
 void wrongClientData(invalidClient wrongData);
 void pressEnterToCont(string message, bool warning);
+string getLower(string word);
 
 // --- Functions
 
@@ -77,11 +78,12 @@ void wrongCommand(cmdStatus cmdStatus)
   case wrongFilterMoviesCmd:
   case wrongSearchClientCmd:
   case wrongSortByParam:
-  case wrongFieldParam:
-  case wrongField:
+  case wrongMovieFieldParam:
+  case wrongMovieField:
+  case wrongClientFieldParam:
     if (cmdStatus == wrongFilterMoviesCmd || cmdStatus == wrongViewMoviesCmd || cmdStatus == wrongSearchClientCmd)
       message.append("Wrong Command");
-    else if (cmdStatus == wrongSortByParam || cmdStatus == wrongFieldParam || cmdStatus == wrongField)
+    else if (cmdStatus == wrongSortByParam || cmdStatus == wrongMovieFieldParam || cmdStatus == wrongMovieField || wrongClientFieldParam)
       message.append((cmdStatus == wrongSortByParam) ? "Wrong Sort By Parameter" : "Wrong Field");
     message.append(". Press ENTER to Display Search Data Parameters Message");
     break;
@@ -111,6 +113,9 @@ void wrongMovieData(invalidMovie wrongData)
   case invalidMovieDate:
     message.append("Release Date");
     break;
+  case movieExists:
+    message = "Error: Movie Exists";
+    break;
   }
   pressEnterToCont(message, true);
 }
@@ -124,6 +129,9 @@ void wrongClientData(invalidClient wrongData)
   {
   case invalidClientId:
     message.append("ID");
+    break;
+  case invalidClientPhoneNumber:
+    message.append("Phone Number");
     break;
   case clientExists:
     message = "Error: Client Exists";
@@ -140,4 +148,15 @@ void pressEnterToCont(string message, bool warning)
   printTitle(message, applyBgColor, applyFgColor, warning);
   getline(cin, temp);
   // ignoreInput();
+}
+
+// Function to Get a Lowercase String
+string getLower(string word)
+{
+  string wordToLower;
+
+  for (int i = 0; i < word.length(); i++)
+    wordToLower += tolower(word[i]); // Append Character in Lowercase
+
+  return wordToLower;
 }

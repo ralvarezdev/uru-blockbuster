@@ -3,9 +3,11 @@
 #include "..\namespaces.h"
 
 using namespace std;
+using namespace clients;
 using namespace movies;
 
 // --- Extern Variables Declaration
+extern bool *movieValidFieldFilterPtr;
 extern int *cmdsPtr, *subCmdsPtr,
     *movieFieldCmdsPtr, *clientFieldCmdsPtr,
     *movieSortByCmdsPtr, *clientSortByCmdsPtr;
@@ -40,10 +42,11 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
 void getMovieStatus(Movie movies[], int nMoviesRead);
 void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[]);
 void filterMovies(Movie movies[], int nMoviesRead, string **fieldParams, int sortBy[]);
-void searchClient(string **clientParams);
-void fields(); // As a Parameter or as a Subcommand
+void searchClient(Client clients[], int nClientsRead, string **params, int sortBy[]);
+void movieFields(); // As a Parameter or as a Subcommand
 void sortByParameters();
 void clientParameters();
+void validGenres();
 void howToUseViewMovies();
 void howToUseFilterMovies();
 void howToUseSearchClient();

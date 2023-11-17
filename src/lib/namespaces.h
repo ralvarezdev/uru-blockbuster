@@ -8,6 +8,7 @@ using namespace std;
 namespace files
 {
   const char sep = ';', genreSep = '|', dateSep = '-'; // Separators
+  const int newLine = '\n';
 }
 
 namespace terminal
@@ -51,11 +52,16 @@ namespace terminal
 }
 
 namespace clients
-{ // Enums Should be at the Beginning
+{                                               // Enums Should be at the Beginning
+  const int nClients = 1000;                    // Max Number of Clients
+  const string clientsFilename = "clients.bin"; // Clients Filename
+  const int nFieldChars = 50;                   // Number of Characters for Each Field
+
   // - Invalid Client Data
   enum invalidClient
   {
     invalidClientId,
+    invalidClientPhoneNumber,
     clientExists
   };
 
@@ -69,14 +75,11 @@ namespace clients
   // - Client Structure
   struct Client
   {
-    int id;             // Client ID
-    string name;        // Client Name
-    string phoneNumber; // Client Phone Number
-    string address;     // Client Address
+    int id;                    // Client ID
+    int phoneNumber;           // Client Phone Number
+    char name[nFieldChars];    // Client Name
+    char address[nFieldChars]; // Client Address
   };
-
-  const int nClients = 1000;                    // Max Number of Clients
-  const string clientsFilename = "clients.csv"; // Clients Filename
 }
 
 namespace movies
@@ -88,7 +91,8 @@ namespace movies
     invalidMovieDuration,
     invalidMovieGenre,
     invalidMoviePrice,
-    invalidMovieDate
+    invalidMovieDate,
+    movieExists
   };
 
   // - Genre
@@ -106,8 +110,8 @@ namespace movies
     genreFilmNoir,
     genreHorror,
     genreIMax,
-    genreMistery,
     genreMusical,
+    genreMystery,
     genreRomance,
     genreSciFi,
     genreThriller,
@@ -124,7 +128,6 @@ namespace movies
     movieNotFound,
     movieRented,
     movieNotRented,
-    movieStatusEnd
   };
 
   const int nMovies = 10000;                  // Max Number of Movies
@@ -158,9 +161,10 @@ namespace commands
     cmdViewMovies,
     cmdFilterMovies,
     cmdSearchClient,
-    cmdFieldParameters,
+    cmdMovieParameters,
     cmdSortByParameters,
     cmdClientParameters,
+    cmdGenres,
     cmdHowToUseViewMovies,
     cmdHowToUseFilterMovies,
     cmdHowToUseSearchClient,
@@ -221,6 +225,8 @@ namespace commands
     movieSortByPriceD,
     movieSortByReleaseA,
     movieSortByReleaseD,
+    movieSortByRentToA,
+    movieSortByRentToB,
     movieSortByTitleA,
     movieSortByTitleB,
     movieSortByEnd // To get the number of Sort By Commands. SHOULD BE AT THE END
@@ -246,8 +252,9 @@ namespace commands
     wrongViewMoviesCmd,
     wrongFilterMoviesCmd,
     wrongSearchClientCmd,
-    wrongField,
-    wrongFieldParam,
+    wrongMovieField,
+    wrongMovieFieldParam,
+    wrongClientFieldParam,
     wrongSortByParam,
     wrongBooleanAnswer
   };

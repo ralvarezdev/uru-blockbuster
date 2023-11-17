@@ -16,5 +16,6 @@ void wrongCommand(cmdStatus cmdStatus);
 void wrongMovieData(invalidMovie wrongData);
 void wrongClientData(invalidClient wrongData);
 void pressEnterToCont(string message, bool warning);
+string getLower(string word);
 
 #endif

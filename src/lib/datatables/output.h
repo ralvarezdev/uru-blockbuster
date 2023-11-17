@@ -12,6 +12,9 @@ using namespace clients;
 void printExamples(string cmds[], string explanations[], int n);
 void printArray(string *params, int m, string paramTitle);
 void print2DArray(string **params, int m, int n, string paramsTitle[]);
-void printMovies(Movie movies[], int m, bool *fields, int n);
+void printDate(int date[], bool rightJustified);
+void printMovies(Movie movies[], int m, bool *fields);
+void printClientInfo(Client client, bool censoreInfo);
+void printClients(Client clients[], int m, bool *fields);
 
 #endif

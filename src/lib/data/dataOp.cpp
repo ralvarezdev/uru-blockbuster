@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 #include "dataOp.h"
+#include <fstream>
 #include "..\terminal\ansiEsc.h"
 #include "..\terminal\input.h"
 #include "..\movies\moviesOp.h"
@@ -25,17 +25,18 @@ void printMovieInfo(Movie movie);
 void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[]);
 void filterMovies(Movie movies[], int nMoviesRead, string **fieldParams, int sortBy[]);
 void getMovieStatus(Movie movies[], int nMoviesRead);
-void searchClient(string **clientParams);
+void searchClient(Client clients[], int nClientsRead, string **params, int sortBy[]);
 void validParameters(int nCharTitle);
-void fields();
+void movieFields();
 void sortByParameters();
 void clientParameters();
+void validGenres();
 void howToUseViewMovies();
 void howToUseFilterMovies();
 void howToUseSearchClient();
 void addClient(Client clients[], int *nClientsRead);
 int getMovieSortByStr(int sortBy[], string sortByStr[], int n);
-int getSortByStr(int sortBy[], string sortByStr[], int n);
+int getClientSortByStr(int sortBy[], string sortByStr[], int n);
 
 // --- Functions
 
@@ -54,6 +55,7 @@ void addMovie(Movie movies[], int *nMoviesRead)
   while (true)
   {
     cout << clear;
+    validGenres();
     printTitle("Add Movie", applyBgColor, applyFgColor, false);
 
     cout << '\n';
@@ -99,8 +101,12 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
     message = "Movie Found: Already Rented";
 
   if (movieStatus != movieNotFound)
+  {
     printMovieInfo(movies[movieIndex]);
-  pressEnterToCont(message, false);
+    cout << '\n';
+  }
+
+  pressEnterToCont(message, (movieStatus == movieNotRented) ? false : true);
 
   if (movieStatus == movieNotRented)
   {
@@ -113,7 +119,7 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
       {
         cout << "Client ID: ";
         getline(cin, temp);
-        client.id = stoi(temp);
+        clientId = stoi(temp);
         break;
       }
       catch (...)
@@ -126,13 +132,16 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
     if (clientStatus == clientNotFound)
       createClientWithId(clients, client, nClientsRead, &clientIndex);
 
+    client.id = clientId;
     movies[movieIndex].rentTo = client.id;
-    movies[movieStatus].rentStatus = 1; // Rented
+    movies[movieIndex].rentStatus = true; // Rented
 
     ofstream outfile(moviesFilename); // Update the movies.csv file with the Movie that was Rented
 
     int rentOn[3];
     string genresStr, dateStr, rentOnStr;
+
+    rentOnStr = getCurrentDate(movies[movieIndex].rentOn); // Get Current Date
 
     if (!outfile.is_open())
       pressEnterToCont("Error: File Not Found. Press ENTER to go Back to Main Menu", true);
@@ -156,14 +165,13 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
 
     pressEnterToCont("Movie Rented Successfully!", false);
   }
-  pressEnterToCont(message, false);
 }
 
 // Function to View Movies
 void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[])
 {
   int m = movieFieldEnd - 1, n = movieSortByEnd / 2;
-  string fieldsStr[m - 1], sortByStr[n], applied;
+  string fieldsStr[m], sortByStr[n], applied;
 
   if (fields[movieFieldAll])
     for (int i = 0; i < m; i++)
@@ -187,38 +195,34 @@ void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[])
   pressEnterToCont("Press ENTER to Continue", false);
 
   sortMovies(movies, nMoviesRead, sortBy, movieSortByEnd); // Sort Movies
-  printMovies(movies, nMoviesRead, fields, m);             // Print Movies
+  printMovies(movies, nMoviesRead, fields);                // Print Movies
 
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
-/*
 // Function to Filter Movies
-void filterMovies(Movie movies[], int nMoviesRead, string **fieldParams, int sortBy[])
+void filterMovies(Movie movies[], int nMoviesRead, string **params, int sortBy[])
 {
   int l = movieFieldEnd - 1, m = maxParamPerSubCmd, n = movieSortByEnd / 2;
-
+  bool fields[l];
   string sortByStr[n];
 
-  n = getSortByStr(sortBy, sortByStr, n);
+  fill(fields, fields + l, true); // Movie Fields to Print (All)
+  n = getMovieSortByStr(sortBy, sortByStr, n);
 
   cout << clear;
   printTitle("Movie Fields Parameters", applyBgColor, applyFgColor, false);
-  print2DArray(fieldParams, l, m, fieldCmdsStr);
+  print2DArray(params, l, m, movieFieldCmdsStrPtr);
 
   printTitle("Sort By Parameters", applyBgColor, applyFgColor, false);
   printArray(sortByStr, n, "Sort By");
 
   pressEnterToCont("Press ENTER to Continue", false);
 
-  bool matchAll = !booleanQuestion("Do you want to Display Movies that Match at Least One Parameter?");
-
-  // filter
-  // sort by
-
+  filterMovies(movies, nMoviesRead, params, fields, sortBy); // Filter Movies
+  cout << '\n';
   pressEnterToCont("Press ENTER to Continue", false);
 }
-*/
 
 // Function to Check Movie Rent Status
 void getMovieStatus(Movie movies[], int nMoviesRead)
@@ -259,23 +263,28 @@ void getMovieStatus(Movie movies[], int nMoviesRead)
   pressEnterToCont(message, false);
 }
 
-// TO DEVELOP
-
-/*
-// Function to Search Client
-void searchClient(string **clientParams)
+// Function to Filter Clients
+void searchClient(Client clients[], int nClientsRead, string **params, int sortBy[])
 {
-  int m = clientEnd, n = maxParamPerSubCmd;
+  int l = clientFieldEnd - 1, m = maxParamPerSubCmd, n = clientSortByEnd / 2, nClientsFiltered;
+  bool fields[l];
+  string sortByStr[n];
+
+  fill(fields, fields + l, true); // Client Fields to Print (All)
+  n = getClientSortByStr(sortBy, sortByStr, n);
 
   cout << clear;
+  printTitle("Client Fields Parameters", applyBgColor, applyFgColor, false);
+  print2DArray(params, l, m, clientFieldCmdsStrPtr);
+  printTitle("Sort By Parameters", applyBgColor, applyFgColor, false);
+  printArray(sortByStr, n, "Sort By");
 
-  printTitle("Search Client Parameters", applyBgColor, applyFgColor, false);
-  print2DArray(clientParams, m, n, clientCmdsStr);
   pressEnterToCont("Press ENTER to Continue", false);
 
-  // Parameters with Highest Priority: Id, Account Number
+  filterClients(clients, nClientsRead, params, fields, sortBy); // Filter Clients
+  cout << '\n';
+  pressEnterToCont("Press ENTER to Continue", false);
 }
- */
 
 // Function to Print the Two Types of Parameters (Used in Filter Movies and Search Clients Command)
 void validParameters(int nCharTitle)
@@ -287,7 +296,7 @@ void validParameters(int nCharTitle)
 }
 
 // Function to Print Field as a Parameter and as a Command
-void fields()
+void movieFields()
 {
   string temp;
 
@@ -299,10 +308,11 @@ void fields()
 
   printTitle("Field as a Command (for Filter Movies)", applyBgColor, applyFgColor, false);
   for (int i = 0; i < movieFieldEnd - 1; i++)
-  {
-    temp = addBrackets(movieFieldCmdsPtr[i]).append(" [param...]");
-    cout << tab1 << setw(nCharTitle) << setfill(' ') << temp << "Parameters for Movie's " << movieFieldCmdsStrPtr[i] << '\n';
-  }
+    if (movieValidFieldFilterPtr[i])
+    {
+      temp = addBrackets(movieFieldCmdsPtr[i]).append(" [param...]");
+      cout << tab1 << setw(nCharTitle) << setfill(' ') << temp << "Parameters for Movie's " << movieFieldCmdsStrPtr[i] << '\n';
+    }
   cout << '\n';
 
   printTitle("Valid Field Parameters (for Filter Movies)", applyBgColor, applyFgColor, false);
@@ -364,6 +374,17 @@ void clientParameters()
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
+// Function that Prints the Valid Genres when Adding a New Movie
+void validGenres()
+{
+  string temp;
+
+  printTitle("Movies Parameters", applyBgColor, applyFgColor, false);
+
+  cout << '\n';
+  printArray(genrePtr, genreEnd - 1, "Genre");
+}
+
 // Function that Prints Examples of View Movies Command
 void howToUseViewMovies()
 {
@@ -391,7 +412,7 @@ void howToUseFilterMovies()
   string explanations[nCmds] = {
       "Search for Movies that their Genre is Horror and Fiction. Sort them by Id in Ascending Order",
       "Search for Movies that their Price is 20 or less. Sort them by Price in Descending Order",
-      "Search for Movie with Id 101. Because the Id is Unique, it'll Ignore the Parameters Left. Sort them by Release Date in Descending Order",
+      "Search for Movie with Id 101 and Movies which has as Genre Either Thriller or Mistery. Sort them by Release Date in Descending Order",
       "Search for Movies that their Director is David Quiroz. Sort them by Title in Ascending Order"};
 
   printExamples(cmds, explanations, nCmds);
@@ -403,14 +424,14 @@ void howToUseFilterMovies()
 void howToUseSearchClient()
 {
   const int nCmds = 3; // Number of Code Examples
-  string cmds[nCmds] = {"c --i 101 --n Ramon",
-                        "c --n \"Andres Avila\" \"Ronald Lopez\" Ivana Grecia",
-                        "c --n  Roberto --a 123456789"};
+  string cmds[nCmds] = {"c -f --i 101 --n Ramon -s i",
+                        "c -f --n \"Andres Avila\" \"Ronald Lopez\" Ivana Grecia -s n",
+                        "c -f --n  Roberto --i 123456789 -s N"};
 
   string explanations[nCmds] = {
-      "Search for Client with Id 101. Because this Field is Unique, it ignores the Client Name",
-      "Search for Clients Named Andres Avila, Ronald Lopez, Ivana and Grecia",
-      "Search for Client with Account Number 123456789. Because the Account Number is also Unique, it ignores the Client Name"};
+      "Search for Clients Named as Ramon and the Client with Id 101. Sort them by Id in Ascending Order",
+      "Search for Clients Named as Andres Avila, Ronald Lopez, Ivana and Grecia. Sort them by Name in Ascending Order",
+      "Search for Clients whose Name is Roberto and the Client whose Id is 123456789. Sort them by Name in Descending Order"};
 
   printExamples(cmds, explanations, nCmds);
 
@@ -429,7 +450,7 @@ void addClient(Client clients[], int *nClientsRead)
     cout << '\n';
     addClientToFile(clients, nClientsRead);
 
-    if (!booleanQuestion("Do you want to Add more Movies?"))
+    if (!booleanQuestion("Do you want to Add more Clients?"))
       break;
   }
 }
@@ -463,7 +484,7 @@ int getMovieSortByStr(int sortBy[], string sortByStr[], int n)
 }
 
 // Function to Get a String Array from a Int Array of the Sort By Commands that will be Applied to the Clients
-int getSortByStr(int sortBy[], string sortByStr[], int n)
+int getClientSortByStr(int sortBy[], string sortByStr[], int n)
 {
   bool nullParam;
   int charIndex, nParams = 0;

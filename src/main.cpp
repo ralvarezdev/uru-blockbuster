@@ -26,6 +26,7 @@ That's the reason why the program is written like this
 */
 
 // --- Extern Variables Declaration (ASSIGNMENT AT THE END OF THIS FILE)
+extern bool *movieValidFieldFilterPtr;
 extern int *cmdsPtr, *subCmdsPtr, *movieFieldCmdsPtr, *clientFieldCmdsPtr, *movieSortByCmdsPtr, *clientSortByCmdsPtr;
 extern string *movieFieldCmdsStrPtr, *clientFieldCmdsStrPtr, *movieSortByCmdsStrPtr, *clientSortByCmdsStrPtr, *genrePtr;
 
@@ -53,7 +54,7 @@ int main(int argc, char **argv)
 
   bool exit = false;                      // Tells the Program if the User wants to Exit the Program
   bool moreInput, isField;                // Boolean to Check if there's More Input
-  int timesExec = 0;                      // Number of times the Main While Loop has been executed
+  int genreIndex, timesExec = 0;          // Number of times the Main While Loop has been executed
   cmdStatus isCmd = validCmd;             // Used for Checking if the Command is Valid or Not. If not, it Stores the Reason
   string inputLine, inputWord, inputLong; // Saves the Input of the User, before being Processed by the Program
 
@@ -76,9 +77,12 @@ int main(int argc, char **argv)
 
       switch (isCmd)
       {
-      case wrongField:
-      case wrongFieldParam:
-        fields(); // Print the Valid Field as Commands or as Parameters
+      case wrongMovieField:
+      case wrongMovieFieldParam:
+        movieFields(); // Print the Valid Movie Fields as Commands or as Parameters
+        break;
+      case wrongClientFieldParam:
+        clientParameters(); // Print the Valid Client Fields as Parameters
         break;
       case wrongSortByParam:
         sortByParameters(); // Print the Valid Sort By Parameters
@@ -153,29 +157,32 @@ int main(int argc, char **argv)
       bool isViewMoviesCmd = (index.main == cmdViewMovies);     // Boolean to Check if the Current Command is View Movies
       bool isSearchClientCmd = (index.main == cmdSearchClient); // To Shorten the If-Else Statements
 
-      int nSortBy = (isSearchClientCmd) ? movieSortByEnd : clientSortByEnd / 2; // Number of Possible Sort By Commands that can be Applied at the Same Time
+      int nSortBy = (isSearchClientCmd) ? clientSortByEnd / 2 : movieSortByEnd / 2; // Number of Possible Sort By Commands that can be Applied at the Same Time
 
-      int sortByOrder[nSortBy]; // Save Sorting Order
-      int sortByCounter = 0;
-
-      for (int i = 0; i < nSortBy / 2; i++)
+      int sortByOrder[nSortBy], sortByCounter = 0; // Save Sorting Order
+      for (int i = 0; i < nSortBy; i++)
         sortByOrder[i] = -1;
 
       if (isViewMoviesCmd)
       { // Initialize viewMovies Sruct
         viewMoviesCmd = ViewMoviesCmd();
-        fill(viewMoviesCmd.sortBy, viewMoviesCmd.sortBy + movieSortByEnd, -1); // Initialize Sort By Array
+        fill(viewMoviesCmd.sortBy, viewMoviesCmd.sortBy + nSortBy, -1); // Initialize Sort By Array
       }
       else if (!isSearchClientCmd)
       { // Initialize filterMovies Struct
         filterMoviesCmd = FilterMoviesCmd();
-        fill(filterMoviesCmd.sortBy, filterMoviesCmd.sortBy + movieSortByEnd, -1); // Initialize Sort By Array
+        for (int i = 0; i < movieFieldEnd - 1; i++)
+          fill(filterMoviesCmd.params[i], filterMoviesCmd.params[i] + maxParamPerSubCmd, "null"); // Initialize Params to Filter Array
         initPtrArray(filterMoviesCmd.paramsPtr, filterMoviesCmd.params, filterMoviesCmd.counter, movieFieldEnd);
+        fill(filterMoviesCmd.sortBy, filterMoviesCmd.sortBy + nSortBy, -1); // Initialize Sort By Array
       }
       else
       { // Initialize searchClient Struct
         searchClientCmd = SearchClientCmd();
+        for (int i = 0; i < clientFieldEnd; i++)
+          fill(searchClientCmd.params[i], searchClientCmd.params[i] + maxParamPerSubCmd, "null"); // Initialize Params to Search Array
         initPtrArray(searchClientCmd.paramsPtr, searchClientCmd.params, searchClientCmd.counter, clientFieldEnd);
+        fill(searchClientCmd.sortBy, searchClientCmd.sortBy + nSortBy, -1); // Initialize Sort By Array
       }
 
       while (true)
@@ -193,26 +200,18 @@ int main(int argc, char **argv)
         moreInput = false;
         isField = true;
 
-        if (inputWord.length() < (isSearchClientCmd ? 3 : 2))
+        if (inputWord.length() < 2)
         { // Check if the Command has the Minimum String Length
-          isCmd = (isSearchClientCmd) ? wrongSearchClientCmd : wrongSubCmd;
+          isCmd = wrongSubCmd;
           break;
         }
 
-        if (isSearchClientCmd)
-        { // Check if the Client Field is in the Array of Client Commands
-          cmd.field = inputWord[2];
-          index.field = isCharOnArray(cmd.field, clientFieldCmdsPtr, clientFieldEnd);
-        }
-        else
-        { // Check if the Command is in the Array of subCommands
-          cmd.sub = inputWord[1];
-          index.sub = isCharOnArray(cmd.sub, subCmdsPtr, subCmdEnd);
-        }
+        cmd.sub = inputWord[1]; // Check if the Command is in the Array of subCommands
+        index.sub = isCharOnArray(cmd.sub, subCmdsPtr, subCmdEnd);
 
-        if (index.sub == -1 || index.field == -1)
+        if (inputWord[0] != '-' || index.sub == -1)
         { // Wrong  Command
-          isCmd = (isSearchClientCmd) ? wrongSearchClientCmd : wrongSubCmd;
+          isCmd = wrongSubCmd;
           break;
         }
 
@@ -227,8 +226,8 @@ int main(int argc, char **argv)
             }
 
             cmd.param = inputWord[0];
-            if (isSearchClientCmd)
-              index.param = isCharOnArray(cmd.param, clientSortByCmdsPtr, clientSortByEnd); // Check if the Command is in the Sort By Array
+            if (isSearchClientCmd) // Check if the Command is in the Sort By Array
+              index.param = isCharOnArray(cmd.param, clientSortByCmdsPtr, clientSortByEnd);
             else
               index.param = isCharOnArray(cmd.param, movieSortByCmdsPtr, movieSortByEnd);
 
@@ -245,53 +244,62 @@ int main(int argc, char **argv)
 
               viewMoviesCmd.sortBy[index.param / 2] = index.param;
             }
-            else
+            else if (!isSearchClientCmd)
             {
               if (filterMoviesCmd.sortBy[index.param / 2] != -1)
                 sortByOrder[sortByCounter++] = index.param;
 
               filterMoviesCmd.sortBy[index.param / 2] = index.param;
             }
+            else
+            {
+              if (searchClientCmd.sortBy[index.param / 2] != -1)
+                sortByOrder[sortByCounter++] = index.param;
+
+              searchClientCmd.sortBy[index.param / 2] = index.param;
+            }
           }
           continue;
         }
 
-        if (!isSearchClientCmd)
-          getline(stream, inputWord, ' ');
+        getline(stream, inputWord, ' ');
 
         while (isField) // Get Field Parameters
         {
           isField = false;
 
-          if (!isSearchClientCmd)
+          if (inputWord[0] == '-' && (isViewMoviesCmd || (!isViewMoviesCmd && inputWord.length() < 3)))
+          { // It's not a Field Command or a Parameter
+            moreInput = true;
+            break;
+          }
+
+          cmd.field = (isViewMoviesCmd) ? inputWord[0] : inputWord[2];
+          if (isSearchClientCmd) // Check if the Command is in the Fields Array
+            index.field = isCharOnArray(cmd.field, clientFieldCmdsPtr, clientFieldEnd);
+          else
+            index.field = isCharOnArray(cmd.field, movieFieldCmdsPtr, movieFieldEnd);
+
+          if (index.field == -1 || (!isViewMoviesCmd && !isSearchClientCmd && !movieValidFieldFilterPtr[index.field]))
+          { // Wrong Field Parameter or Field Command
+            if (!isSearchClientCmd)
+              isCmd = (isViewMoviesCmd) ? wrongMovieFieldParam : wrongMovieField;
+            else
+              isCmd = wrongClientFieldParam;
+            break;
+          }
+
+          if (isViewMoviesCmd)
           {
-            if (inputWord[0] == '-' && (isViewMoviesCmd || (!isViewMoviesCmd && inputWord.length() < 3)))
-            { // It's not a Field Command or a Parameter
-              moreInput = true;
-              break;
-            }
+            viewMoviesCmd.params[index.field] = true;
 
-            cmd.field = (isViewMoviesCmd) ? inputWord[0] : inputWord[2];
-            index.field = isCharOnArray(cmd.field, movieFieldCmdsPtr, movieFieldEnd); // Check if the Command is in the Field Parameters Array
+            if (getline(stream, inputWord, ' '))                 // Get the Next Argument
+              if (inputWord[0] == '-' && inputWord.length() < 3) // It's a Subcommand
+                moreInput = true;
+              else if (inputWord[0] != '-' && inputWord.length() > 0)
+                isField = true;
 
-            if (index.field == -1 || (!isViewMoviesCmd && index.field == movieFieldAll))
-            { // Wrong Field Parameter or Field Command
-              isCmd = (isViewMoviesCmd) ? wrongFieldParam : wrongField;
-              break;
-            }
-
-            if (isViewMoviesCmd)
-            {
-              viewMoviesCmd.params[index.field] = true;
-
-              if (getline(stream, inputWord, ' '))                 // Get the Next Argument
-                if (inputWord[0] == '-' && inputWord.length() < 3) // It's a Subcommand
-                  moreInput = true;
-                else if (inputWord[0] != '-' && inputWord.length() > 0)
-                  isField = true;
-
-              continue;
-            }
+            continue;
           }
 
           int *paramCounter; // Counter
@@ -311,15 +319,12 @@ int main(int argc, char **argv)
                 break;
               }
 
-              inputWord.insert(inputWord.length(), 1, ' ');                 // Insert Whitespace at the End
-              inputLong.insert(0, inputWord.substr(1, inputWord.length())); // Insert the Parameter at the Beginning of the String, without the Double Quote
-              inputWord = inputLong;
+              inputWord.insert(inputWord.length(), 1, ' ');                             // Insert Whitespace at the End
+              inputWord = inputLong.insert(0, inputWord.substr(1, inputWord.length())); // Insert the Parameter at the Beginning of the String, without the Double Quote
             }
             else if (inputWord[0] == '-')
             { // If it's a Command break this For-loop
-              if (isSearchClientCmd)
-                moreInput = true;
-              else if (inputWord.length() < 3)
+              if (inputWord.length() < 3)
                 moreInput = true;
               else if (inputWord.length() > 2)
                 isField = true;
@@ -328,10 +333,33 @@ int main(int argc, char **argv)
             else if (inputWord.length() == 0) // To Prevent Adding Whitespaces as Parameters-
               continue;
 
-            if (isSearchClientCmd) // Add Parameter to Search Client
-              searchClientCmd.params[index.field][*paramCounter] = inputWord;
-            else // Add Parameter to Filter Movies
-              filterMoviesCmd.params[index.field][*paramCounter] = inputWord;
+            try
+            {
+              if (isSearchClientCmd)
+              { // Add Parameter to Search Client
+                if (index.field == clientFieldId)
+                  stoi(inputWord); // Check if the String can be Converted into an Integer
+
+                searchClientCmd.params[index.field][*paramCounter] = inputWord;
+              }
+              else // Add Parameter to Filter Movies
+              {
+                if (index.field == movieFieldId || index.field == movieFieldPrice || index.field == movieFieldDuration)
+                  stoi(inputWord); // Check if the String can be Converted into an Integer
+                else if (index.field == movieFieldGenre)
+                {
+                  genreIndex = getGenreIndexLower(inputWord);
+                  if (genreIndex == -1)
+                    throw(-1); // Invalid Genre
+                }
+
+                filterMoviesCmd.params[index.field][*paramCounter] = genrePtr[genreIndex];
+              }
+            }
+            catch (...)
+            {
+              continue; // Ignore the Parameter
+            }
 
             *paramCounter += 1; // Parameter Counter
           }
@@ -340,13 +368,10 @@ int main(int argc, char **argv)
             if (!getline(stream, inputWord, ' '))
               break;
             else if (inputWord[0] == '-') // Got a Command
-              if (inputWord.length() < 3 && !isSearchClientCmd)
+              if (inputWord.length() < 3)
                 moreInput = true;
               else if (inputWord.length() > 2)
-                if (isSearchClientCmd)
-                  moreInput = true;
-                else
-                  isField = true;
+                isField = true;
         }
       }
 
@@ -356,6 +381,8 @@ int main(int argc, char **argv)
             viewMoviesCmd.sortBy[i] = sortByOrder[i];
           else if (!isSearchClientCmd)
             filterMoviesCmd.sortBy[i] = sortByOrder[i];
+          else
+            searchClientCmd.sortBy[i] = sortByOrder[i];
 
       if (isCmd == validCmd)
         switch (index.main)
@@ -367,7 +394,7 @@ int main(int argc, char **argv)
           filterMovies(movies, nMoviesRead, filterMoviesCmd.paramsPtr, filterMoviesCmd.sortBy);
           break;
         case cmdSearchClient:
-          searchClient(searchClientCmd.paramsPtr);
+          searchClient(clients, nClientsRead, searchClientCmd.paramsPtr, searchClientCmd.sortBy);
           break;
         }
     }
@@ -390,14 +417,19 @@ int main(int argc, char **argv)
     case cmdMovieStatus:
       getMovieStatus(movies, nMoviesRead);
       break;
-    case cmdFieldParameters:
-      fields();
+    case cmdMovieParameters:
+      movieFields();
       break;
     case cmdSortByParameters:
       sortByParameters();
       break;
     case cmdClientParameters:
       clientParameters();
+      break;
+    case cmdGenres:
+      cout << clear; // Clear Terminal
+      validGenres();
+      pressEnterToCont("Press ENTER to Continue", false);
       break;
     case cmdHowToUseViewMovies:
       howToUseViewMovies();
@@ -437,9 +469,10 @@ void helpMessage()
        << tab1 << addBrackets(cmdsPtr[cmdFilterMovies]) << " Filter Movies\n"
        << tab1 << addBrackets(cmdsPtr[cmdSearchClient]) << " Search Client\n"
        << "Command Parameters:\n"
-       << tab1 << addBrackets(cmdsPtr[cmdFieldParameters]) << " Movie Field Parameters\n"
        << tab1 << addBrackets(cmdsPtr[cmdSortByParameters]) << " Sort By Parameters\n"
+       << tab1 << addBrackets(cmdsPtr[cmdMovieParameters]) << " Movie Field Parameters\n"
        << tab1 << addBrackets(cmdsPtr[cmdClientParameters]) << " Search Client Parameters\n"
+       << tab1 << addBrackets(cmdsPtr[cmdGenres]) << " Genres\n"
        << "How-To:\n"
        << tab1 << addBrackets(cmdsPtr[cmdHowToUseViewMovies]) << " How to Use the View Movie Command\n"
        << tab1 << addBrackets(cmdsPtr[cmdHowToUseFilterMovies]) << " How to Use the Filter Movie Command\n"
@@ -493,31 +526,35 @@ void winSetChcpUtf8()
 // --- Extern Variables and Constants Definition
 
 // Lowercase for Ascending Order, Uppercase for Descending
-int cmdsChar[cmdEnd] = {'a', 'r', 's', 'v', 'f', 'c', 'F', 'S', 'C', 'x', 'y', 'z', 'A', 'h', 'e'};
+int cmdsChar[cmdEnd] = {'a', 'r', 's', 'v', 'f', 'c', 'F', 'S', 'C', 'G', 'x', 'y', 'z', 'A', 'h', 'e'};
 int subCmdsChar[subCmdEnd] = {'f', 's'};
+
 int movieFieldCmdsChar[movieFieldEnd] = {'i', 't', 'd', 'g', 'D', 'p', 'r', 's', 'R', 'c', '.'};
-int clientFieldCmdsChar[clientFieldEnd] = {'i', 'n', 'a'};
-int movieSortByCmdsChar[movieSortByEnd] = {'d', 'D', 'i', 'I', 'p', 'P', 'r', 'R', 't', 'T'};
+bool movieValidFieldFilter[movieFieldEnd] = {true, true, true, true, true, true, false, false, false, false, false};
+int clientFieldCmdsChar[clientFieldEnd] = {'i', 'n', 'p', 'a'};
+
+int movieSortByCmdsChar[movieSortByEnd] = {'d', 'D', 'i', 'I', 'p', 'P', 'r', 'R', 't', 'T', 'n', 'N'};
 int clientSortByCmdsChar[clientSortByEnd] = {'i', 'I', 'n', 'N'};
 
 // Command Title
 string movieFieldCmdsStr[movieFieldEnd - 1] = {"Id", "Title", "Director", "Genre", "Min", "Price",
                                                "Release", "Rented", "Rent On", "Rent To"};
-string clientFieldCmdsStr[clientFieldEnd] = {"Id", "Name", "Account Number"};
+string clientFieldCmdsStr[clientFieldEnd] = {"Id", "Name", "Phone Number", "Address"};
 
-string movieSortByCmdsStr[movieSortByEnd] = {"Duration", "Id", "Price", "Release Date", "Title"};
+string movieSortByCmdsStr[movieSortByEnd] = {"Duration", "Id", "Price", "Release Date", "Rent To", "Name"};
 string clientSortByCmdsStr[movieSortByEnd] = {"Id", "Name"};
 
 // Genres
 string genreStr[genreEnd] = {"Action", "Adventure", "Animation", "Children", "Comedy",
                              "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir",
-                             "Horror", "IMAX", "Mystery", "Musical", "Romance", "Sci-Fi",
+                             "Horror", "IMAX", "Musical", "Mystery", "Romance", "Sci-Fi",
                              "Thriller", "War", "Western", "(no genres listed)", "ERROR"};
 
 // --- Extern Variables and Constants Assignment
 int *cmdsPtr = cmdsChar;
 int *subCmdsPtr = subCmdsChar;
 int *movieFieldCmdsPtr = movieFieldCmdsChar;
+bool *movieValidFieldFilterPtr = movieValidFieldFilter;
 int *clientFieldCmdsPtr = clientFieldCmdsChar;
 int *movieSortByCmdsPtr = movieSortByCmdsChar;
 int *clientSortByCmdsPtr = clientSortByCmdsChar;

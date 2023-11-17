@@ -1,6 +1,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <cstring>
 #include "..\terminal\ansiEsc.h"
 #include "..\namespaces.h"
 
@@ -11,14 +12,16 @@ using namespace movies;
 using namespace terminal;
 
 // --- Extern Variables Declaration
-extern int *movieFieldCmdsStrPtr, *clientFieldCmdsStrPtr;
-extern string *genrePtr;
+extern string *genrePtr, *movieFieldCmdsStrPtr, *clientFieldCmdsStrPtr;
 
 // --- Function Prototypes
 void printExamples(string cmds[], string explanations[], int n);
 void printArray(string *params, int m, string paramTitle);
 void print2DArray(string **params, int m, int n, string paramsTitle[]);
-void printMovies(Movie movies[], int m, bool *fields, int n);
+void printDate(int date[], bool rightJustified);
+void printMovies(Movie movies[], int m, bool *fields);
+void printClientInfo(Client client, bool censoreInfo);
+void printClients(Client clients[], int m, bool *fields);
 
 // --- Functions For Output Styling
 
@@ -78,7 +81,7 @@ void printArray(string *params, int n, string paramTitle)
   string param;
 
   cout << setw(nCharTitle) << setfill(' ') << left << paramTitle;
-  for (int i = 0; i < n && params[i].length() != 0; i++)
+  for (int i = 0; i < n && params[i] != "null"; i++)
   {
     param = params[i];
 
@@ -103,7 +106,7 @@ void printArray(string *params, int n, string paramTitle)
 void print2DArray(string **params, int m, int n, string paramsTitle[])
 {
   for (int i = 0; i < m; i++)
-    if (params[i][0].length() != 0)
+    if (params[i][0] != "null")
       printArray(params[i], n, paramsTitle[i]);
 }
 
@@ -152,7 +155,7 @@ void printMovieInfo(Movie movie)
 }
 
 // Function to Print Movies
-void printMovies(Movie movies[], int m, bool *fields, int n)
+void printMovies(Movie movies[], int m, bool *fields)
 {
   const int nPerGenre = 3;                    // Number of Characters Per Genre
   const int nId = 5;                          // ... for Id
@@ -162,20 +165,21 @@ void printMovies(Movie movies[], int m, bool *fields, int n)
   const int nStatus = 7;                      // ... for Rent Status
   const int nRentTo = 8;                      // ... for Rent to Client (Id)
   const int nDirector = 15;                   // ... for Director Name
-  int nTitle = nChar;                         // Decrease the Number of Characters Used by the Title Field
 
-  // Number of Characters per Field
-  int fieldsNChar[movieFieldEnd - 1] = {nId, 0, nDirector, nGenre, nDuration, nPrice,
-                                        nDate, nStatus, nDate, nRentTo};
+  int nTitle = nChar; // Decrease the Number of Characters Used by the Title Field
+  int n = movieFieldEnd - 1;
+
+  int fieldsNChar[n] = {nId, 0, nDirector, nGenre, nDuration, nPrice,
+                        nDate, nStatus, nDate, nRentTo}; // Number of Characters per Field
 
   for (int i = 0; i < n; i++)
     if (fields[i] && i != movieFieldName)
-      nTitle -= fieldsNChar[i]; // Decrease Number of Characters for Movie's Name FIeld
+      nTitle -= fieldsNChar[i]; // Decrease Number of Characters for Movie's Name Field
 
   fieldsNChar[movieFieldName] = nTitle; // Assign Number of Characters for Movie's Name
 
   cout << clear << sgrBgCmd << sgrFgCmd;
-  for (int i = 0; i < movieFieldEnd - 1; i++)
+  for (int i = 0; i < n; i++)
     if (fields[i])
       cout << setw(fieldsNChar[i]) << setfill(' ') << movieFieldCmdsStrPtr[i]; // Field Title
   cout << reset << '\n';
@@ -275,10 +279,8 @@ void printDate(int date[], bool rightJustified)
 // Function to Print Client Info
 void printClientInfo(Client client, bool censoreInfo)
 {
-  int nId;            // Client ID
-  string name;        // Client Name
-  string phoneNumber; // Client Phone Number
-  string address;     // Client Address
+  string name = client.name;       // Client Name
+  string address = client.address; // Client Address
 
   int nCharContent = nChar - nCharField;
 
@@ -287,30 +289,30 @@ void printClientInfo(Client client, bool censoreInfo)
   cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStrPtr[clientFieldId] << client.id << '\n'; // Print Client Id
 
   cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStrPtr[clientFieldName]; // Print Client Name
-  if (client.name.length() < nCharContent)
-    cout << setw(nCharContent) << setfill(' ') << client.name << '\n';
+  if (name.length() < nCharContent)
+    cout << setw(nCharContent) << setfill(' ') << name << '\n';
   else
-    cout << client.name.substr(0, nCharContent - 4) << "... " << '\n';
+    cout << name.substr(0, nCharContent - 4) << "... " << '\n';
 
   if (!censoreInfo)
   {
-    cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStrPtr[clientFieldPhoneNumber]; // Print Client Phone Number
-    if (client.phoneNumber.length() < nCharContent)
-      cout << setw(nCharContent) << setfill(' ') << client.phoneNumber << '\n';
-    else
-      cout << client.phoneNumber.substr(0, nCharContent - 4) << "... " << '\n';
+    cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStrPtr[clientFieldPhoneNumber] // Print Client Phone Number
+         << setw(nCharContent) << setfill(' ') << client.phoneNumber << '\n'
+         << setw(nCharField) << setfill(' ') << clientFieldCmdsStrPtr[clientFieldAddress]; // Print Client Address
 
-    cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStrPtr[clientFieldAddress]; // Print Client Address
-    if (client.address.length() < nCharContent)
-      cout << setw(nCharContent) << setfill(' ') << client.address << '\n';
+    if (address.length() < nCharContent)
+      cout << setw(nCharContent) << setfill(' ') << address << '\n';
     else
-      cout << client.address.substr(0, nCharContent - 4) << "... " << '\n';
+      cout << address.substr(0, nCharContent - 4) << "... " << '\n';
   }
 }
 
 // Function to Print Clients
 void printClients(Client clients[], int m, bool *fields)
 {
+  string name;    // Client Name
+  string address; // Client Address
+
   const int nId = 15;          // Number of Characters for Id
   const int nPhoneNumber = 15; // ... for Phone Number
   const int nAddress = 35;     // ... for Address
@@ -319,9 +321,11 @@ void printClients(Client clients[], int m, bool *fields)
   int n = clientFieldEnd - 1;
 
   int fieldsNChar[n] = {nId, 0, nPhoneNumber, nAddress}; // Number of Characters per Field
+
   for (int i = 0; i < n; i++)
     if (fields[i] && i != clientFieldName)
-      nName -= fieldsNChar[i]; // Decrease Number of Characters for Movie's Name FIeld
+      nName -= fieldsNChar[i]; // Decrease Number of Characters for Client's Name Field
+
   fieldsNChar[clientFieldName] = nName;
 
   cout << clear << sgrBgCmd << sgrFgCmd;
@@ -335,30 +339,30 @@ void printClients(Client clients[], int m, bool *fields)
 
   for (int i = 0; i < m; i++)
   {
+    name = clients[i].name;       // Client Name
+    address = clients[i].address; // Client Address
+
     // Client Id
     if (fields[clientFieldId])
       cout << setw(nId) << setfill(' ') << clients[i].id;
 
     // Client Title
     if (fields[clientFieldName])
-      if (clients[i].name.length() < nName)
-        cout << setw(nName) << setfill(' ') << clients[i].name;
+      if (name.length() < nName)
+        cout << setw(nName) << setfill(' ') << name;
       else
-        cout << clients[i].name.substr(0, nName - 4) << "... ";
+        cout << name.substr(0, nName - 4) << "... ";
 
     // Client Phone Number
     if (fields[clientFieldPhoneNumber])
-      if (clients[i].phoneNumber.length() < nName)
-        cout << setw(nName) << setfill(' ') << clients[i].phoneNumber;
-      else
-        cout << clients[i].phoneNumber.substr(0, nName - 4) << "... ";
+      cout << setw(nPhoneNumber) << setfill(' ') << clients[i].phoneNumber;
 
     // Client Address
     if (fields[clientFieldAddress])
-      if (clients[i].address.length() < nName)
-        cout << setw(nName) << setfill(' ') << clients[i].address;
+      if (address.length() < nName)
+        cout << setw(nName) << setfill(' ') << address;
       else
-        cout << clients[i].address.substr(0, nName - 4) << "... ";
+        cout << address.substr(0, nName - 4) << "... ";
 
     cout << '\n';
   }
