@@ -1,6 +1,7 @@
 #include <string>
 #include <typeinfo>
-#include "..\namespaces.h"
+
+#include "../namespaces.h"
 
 using namespace std;
 using namespace clients;
@@ -41,8 +42,8 @@ void addMovie(Movie movies[], int *nMoviesRead);
 void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsRead);
 void getMovieStatus(Movie movies[], int nMoviesRead);
 void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[]);
-void filterMovies(Movie movies[], int nMoviesRead, string **fieldParams, int sortBy[]);
-void searchClient(Client clients[], int nClientsRead, string **params, int sortBy[]);
+void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], int sortBy[]);
+void searchClient(Client clients[], int nClientsRead, string **params, int counter[], int sortBy[]);
 void movieFields(); // As a Parameter or as a Subcommand
 void sortByParameters();
 void clientParameters();

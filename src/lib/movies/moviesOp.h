@@ -1,4 +1,4 @@
-#include "..\namespaces.h"
+#include "../namespaces.h"
 
 using namespace std;
 using namespace commands;
@@ -13,8 +13,8 @@ int getMovies(Movie movies[]);
 movieStatus checkMovieStatusById(Movie movies[], int nMoviesRead, int id, int *index);
 int getGenreIndex(string genre);
 int getGenreIndexLower(string genre);
-void filterMovies(Movie movies[], int nMoviesRead, string **params, bool fields[], int sortBy[]);
-void sortMovies(Movie *movies, int m, int sortBy[], int n);
+void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], bool fields[], int sortBy[]);
+void sortMovies(Movie movies[], int m, int sortBy[], int n);
 string getGenresStr(int genres[], int nGenres);
 string getDateStr(int date[3]);
 int getMovieId(string message);

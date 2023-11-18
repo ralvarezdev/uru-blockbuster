@@ -6,12 +6,13 @@
 
 #include <iostream>
 #include <filesystem>
-#include "lib\namespaces.h"
-#include "lib\clients\clientsOp.h"
-#include "lib\movies\moviesOp.h"
-#include "lib\data\dataOp.h"
-#include "lib\terminal\ansiEsc.h"
-#include "lib\terminal\input.h"
+
+#include "lib/namespaces.h"
+#include "lib/clients/clientsOp.h"
+#include "lib/movies/moviesOp.h"
+#include "lib/data/dataOp.h"
+#include "lib/terminal/ansiEsc.h"
+#include "lib/terminal/input.h"
 
 using namespace std;
 using namespace clients;
@@ -351,9 +352,12 @@ int main(int argc, char **argv)
                   genreIndex = getGenreIndexLower(inputWord);
                   if (genreIndex == -1)
                     throw(-1); // Invalid Genre
-                }
 
-                filterMoviesCmd.params[index.field][*paramCounter] = genrePtr[genreIndex];
+                  filterMoviesCmd.params[index.field][*paramCounter] = genrePtr[genreIndex];
+                  *paramCounter = *paramCounter + 1; // Parameter Counter
+                  continue;
+                }
+                filterMoviesCmd.params[index.field][*paramCounter] = inputWord;
               }
             }
             catch (...)
@@ -361,7 +365,7 @@ int main(int argc, char **argv)
               continue; // Ignore the Parameter
             }
 
-            *paramCounter += 1; // Parameter Counter
+            *paramCounter = *paramCounter + 1; // Parameter Counter
           }
 
           while (!isField && !moreInput) // Reached Max Number of Parameters for Command
@@ -391,10 +395,10 @@ int main(int argc, char **argv)
           viewMovies(movies, nMoviesRead, viewMoviesCmd.params, viewMoviesCmd.sortBy);
           break;
         case cmdFilterMovies:
-          filterMovies(movies, nMoviesRead, filterMoviesCmd.paramsPtr, filterMoviesCmd.sortBy);
+          filterMovies(movies, nMoviesRead, filterMoviesCmd.paramsPtr, filterMoviesCmd.counter, filterMoviesCmd.sortBy);
           break;
         case cmdSearchClient:
-          searchClient(clients, nClientsRead, searchClientCmd.paramsPtr, searchClientCmd.sortBy);
+          searchClient(clients, nClientsRead, searchClientCmd.paramsPtr, searchClientCmd.counter, searchClientCmd.sortBy);
           break;
         }
     }

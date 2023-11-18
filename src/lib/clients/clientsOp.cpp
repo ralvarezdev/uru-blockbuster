@@ -2,13 +2,16 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "..\namespaces.h"
-#include "..\terminal\input.h"
-#include "..\datatables\output.h"
+
+#include "../namespaces.h"
+#include "../terminal/ansiEsc.h"
+#include "../terminal/input.h"
+#include "../datatables/output.h"
 
 using namespace std;
 using namespace clients;
 using namespace files;
+using namespace terminal;
 
 // --- Function Prototypes
 int getClients(Client clients[]);
@@ -16,8 +19,8 @@ int getClientId(string message);
 void addClientToFile(Client clients[], int *nClientsRead);
 clientStatus checkClientStatusById(Client clients[], int nClientsRead, int id, int *index);
 void createClientWithId(Client clients[], Client newClient, int *nClientsRead, int *index);
-void filterClients(Client clients[], int nClientsRead, string **params, bool fields[], int sortBy[]);
-void sortClients(Client *clients, int m, int sortBy[], int n);
+void filterClients(Client clients[], int nClientsRead, string **params, int counter[], bool fields[], int sortBy[]);
+void sortClients(Client clients[], int m, int sortBy[], int n);
 void clientsMergeSort(Client clients[], int n, int sortByIndex);
 void clientsMerge(Client clients[], Client sorted[], int low, int mid, int high, int sortByIndex);
 
@@ -34,19 +37,18 @@ int getClients(Client clients[])
     infile.close();
     pressEnterToCont("Error: File Not Found. Press ENTER to go Back to Main Menu", true);
   }
+  else
+    while (nClients >= nClientsRead)
+    {
+      Client clientRead;
 
-  while (nClients >= nClientsRead)
-  {
-    Client clientRead;
+      infile.read((char *)&clientRead, sizeof(Client)); // Read Structure
+      if (infile.eof())                                 // Reached End of File
+        break;
+      clients[nline++] = clientRead;
 
-    infile.read((char *)&clientRead, sizeof(Client)); // Read Structure
-    if (infile.eof())                                 // Reached End of File
-      break;
-    clients[nline] = clientRead;
-
-    nline++;
-    nClientsRead = nline;
-  }
+      nClientsRead = nline;
+    }
 
   infile.close();
 
@@ -168,11 +170,11 @@ void createClientWithId(Client clients[], Client newClient, int *nClientsRead, i
 }
 
 // Function that Returns Clients Indexes that Matched with the Parameters
-void filterClients(Client clients[], int nClientsRead, string **params, bool fields[], int sortBy[])
+void filterClients(Client clients[], int nClientsRead, string **params, int counter[], bool fields[], int sortBy[])
 {
   clientStatus clientStatus;
   double account;
-  int i, id, index, counter = 0;
+  int i, id, index, indexCounter = 0;
   string nameLower;
 
   bool *filteredIndexes = new bool[nClientsRead];               // Allocate Memory
@@ -180,10 +182,10 @@ void filterClients(Client clients[], int nClientsRead, string **params, bool fie
 
   for (int field = 0; field < clientFieldEnd - 1; field++)
   {
-    if (params[field][0] == "null") // Check if the Function can Filter that Field, and if there are Parameters
+    if (counter[field] == 0) // Check if the Function can Filter that Field, and if there are Parameters
       continue;
 
-    for (int param = 0; param < maxParamPerSubCmd && params[field][param] != "null"; param++)
+    for (int param = 0; param < maxParamPerSubCmd && param < counter[field]; param++)
       if (field == clientFieldId)
       {
         id = stoi(params[field][param]);
@@ -192,7 +194,7 @@ void filterClients(Client clients[], int nClientsRead, string **params, bool fie
         if (clientStatus != clientNotFound && !filteredIndexes[index])
         {                                // Checks if the Client has Already being Filtered
           filteredIndexes[index] = true; // Store Index
-          counter++;
+          indexCounter++;
         }
       }
       else
@@ -204,27 +206,36 @@ void filterClients(Client clients[], int nClientsRead, string **params, bool fie
           if (!filteredIndexes[i] && getLower(clients[i].name).find(nameLower) != string::npos)
           {                            // Checks if the Client Name in Lowercase Contains the Parameter that is being Searched by Linear Search
             filteredIndexes[i] = true; // Save Id
-            counter++;
+            indexCounter++;
           }
       }
   }
 
-  Client *filteredClients = new Client[counter];
+  Client *filteredClients = new Client[indexCounter];
 
-  counter = 0;
+  indexCounter = 0;
   for (int i = 0; i < nClientsRead; i++)
     if (filteredIndexes[i])
-      filteredClients[counter++] = clients[i]; // Save Client that has been Filtered to Array
+      filteredClients[indexCounter++] = clients[i]; // Save Client that has been Filtered to Array
 
-  sortClients(filteredClients, counter, sortBy, clientSortByEnd); // Sort Clients
-  printClients(filteredClients, counter, fields);                 // Print Clients
+  sortClients(filteredClients, indexCounter, sortBy, clientSortByEnd / 2); // Sort Clients
+  printClients(filteredClients, indexCounter, fields);                     // Print Clients
+
+  string message = "Number of Coincidences: ";
+  message.append(to_string(indexCounter));
+
+  if (indexCounter == 0)
+    cout << string(nChar, '-') << '\n';
+
+  cout << '\n';
+  printTitle(message, applyBgColor, applyFgColor, (indexCounter == 0) ? true : false); // Print Number of Coincidences
 
   delete[] filteredClients;
   delete[] filteredIndexes;
 }
 
 // Function to Sort Clients (Uses Merge Sort)
-void sortClients(Client *clients, int m, int sortBy[], int n)
+void sortClients(Client clients[], int m, int sortBy[], int n)
 {
   for (int i = 0; i < n; i++)
     if (sortBy[i] != -1)
@@ -271,9 +282,8 @@ void clientsMergeSort(Client clients[], int n, int sortByIndex)
     for (i = n - 1; i > (n - 1) / 2; i--)
     {
       temp = clients[j];
-      clients[j] = clients[i];
+      clients[j++] = clients[i];
       clients[i] = temp;
-      j++;
     }
   }
 }

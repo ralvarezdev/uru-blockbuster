@@ -3,12 +3,13 @@
 #include <iostream>
 #include "dataOp.h"
 #include <fstream>
-#include "..\terminal\ansiEsc.h"
-#include "..\terminal\input.h"
-#include "..\movies\moviesOp.h"
-#include "..\clients\clientsOp.h"
-#include "..\datatables\output.h"
-#include "..\namespaces.h"
+
+#include "../terminal/ansiEsc.h"
+#include "../terminal/input.h"
+#include "../movies/moviesOp.h"
+#include "../clients/clientsOp.h"
+#include "../datatables/output.h"
+#include "../namespaces.h"
 
 using namespace std;
 using namespace clients;
@@ -23,9 +24,9 @@ void addMovie(Movie movies[], int *nMoviesRead);
 void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsRead);
 void printMovieInfo(Movie movie);
 void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[]);
-void filterMovies(Movie movies[], int nMoviesRead, string **fieldParams, int sortBy[]);
+void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], int sortBy[]);
 void getMovieStatus(Movie movies[], int nMoviesRead);
-void searchClient(Client clients[], int nClientsRead, string **params, int sortBy[]);
+void searchClient(Client clients[], int nClientsRead, string **params, int counter[], int sortBy[]);
 void validParameters(int nCharTitle);
 void movieFields();
 void sortByParameters();
@@ -194,14 +195,14 @@ void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[])
 
   pressEnterToCont("Press ENTER to Continue", false);
 
-  sortMovies(movies, nMoviesRead, sortBy, movieSortByEnd); // Sort Movies
-  printMovies(movies, nMoviesRead, fields);                // Print Movies
+  sortMovies(movies, nMoviesRead, sortBy, movieSortByEnd / 2); // Sort Movies
+  printMovies(movies, nMoviesRead, fields);                    // Print Movies
 
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
 // Function to Filter Movies
-void filterMovies(Movie movies[], int nMoviesRead, string **params, int sortBy[])
+void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], int sortBy[])
 {
   int l = movieFieldEnd - 1, m = maxParamPerSubCmd, n = movieSortByEnd / 2;
   bool fields[l];
@@ -219,7 +220,7 @@ void filterMovies(Movie movies[], int nMoviesRead, string **params, int sortBy[]
 
   pressEnterToCont("Press ENTER to Continue", false);
 
-  filterMovies(movies, nMoviesRead, params, fields, sortBy); // Filter Movies
+  filterMovies(movies, nMoviesRead, params, counter, fields, sortBy); // Filter Movies
   cout << '\n';
   pressEnterToCont("Press ENTER to Continue", false);
 }
@@ -264,9 +265,9 @@ void getMovieStatus(Movie movies[], int nMoviesRead)
 }
 
 // Function to Filter Clients
-void searchClient(Client clients[], int nClientsRead, string **params, int sortBy[])
+void searchClient(Client clients[], int nClientsRead, string **params, int counter[], int sortBy[])
 {
-  int l = clientFieldEnd - 1, m = maxParamPerSubCmd, n = clientSortByEnd / 2, nClientsFiltered;
+  int l = clientFieldEnd, m = maxParamPerSubCmd, n = clientSortByEnd / 2, nClientsFiltered;
   bool fields[l];
   string sortByStr[n];
 
@@ -281,7 +282,7 @@ void searchClient(Client clients[], int nClientsRead, string **params, int sortB
 
   pressEnterToCont("Press ENTER to Continue", false);
 
-  filterClients(clients, nClientsRead, params, fields, sortBy); // Filter Clients
+  filterClients(clients, nClientsRead, params, counter, fields, sortBy); // Filter Clients
   cout << '\n';
   pressEnterToCont("Press ENTER to Continue", false);
 }
@@ -475,10 +476,7 @@ int getMovieSortByStr(int sortBy[], string sortByStr[], int n)
       order = "[A] ";
 
     if (!nullParam)
-    {
-      sortByStr[nParams] = order.append(movieSortByCmdsStrPtr[charIndex / 2]); // Data to Print in the Sort By Parameters Row
-      nParams++;
-    }
+      sortByStr[nParams++] = order.append(movieSortByCmdsStrPtr[charIndex / 2]); // Data to Print in the Sort By Parameters Row
   }
   return nParams;
 }
@@ -503,10 +501,7 @@ int getClientSortByStr(int sortBy[], string sortByStr[], int n)
       order = "[A] ";
 
     if (!nullParam)
-    {
-      sortByStr[nParams] = order.append(clientSortByCmdsStrPtr[charIndex / 2]); // Data to Print in the Sort By Parameters Row
-      nParams++;
-    }
+      sortByStr[nParams++] = order.append(clientSortByCmdsStrPtr[charIndex / 2]); // Data to Print in the Sort By Parameters Row
   }
   return nParams;
 }

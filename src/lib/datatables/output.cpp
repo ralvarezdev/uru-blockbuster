@@ -2,8 +2,9 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include "..\terminal\ansiEsc.h"
-#include "..\namespaces.h"
+
+#include "../terminal/ansiEsc.h"
+#include "../namespaces.h"
 
 using namespace std;
 using namespace clients;
@@ -19,6 +20,7 @@ void printExamples(string cmds[], string explanations[], int n);
 void printArray(string *params, int m, string paramTitle);
 void print2DArray(string **params, int m, int n, string paramsTitle[]);
 void printDate(int date[], bool rightJustified);
+void addDateToStream(int date[], bool rightJustified, ostringstream *stream);
 void printMovies(Movie movies[], int m, bool *fields);
 void printClientInfo(Client client, bool censoreInfo);
 void printClients(Client clients[], int m, bool *fields);
@@ -187,33 +189,35 @@ void printMovies(Movie movies[], int m, bool *fields)
   // Print Movies
   int *date;
 
+  ostringstream stream;
+  stream << left;
   for (int i = 0; i < m; i++)
   {
     // Movie Id
     if (fields[movieFieldId])
-      cout << setw(nId) << setfill(' ') << movies[i].id;
+      stream << setw(nId) << setfill(' ') << movies[i].id;
 
     // Movie Title
     if (fields[movieFieldName])
       if (movies[i].name.length() < nTitle)
-        cout << setw(nTitle) << setfill(' ') << movies[i].name;
+        stream << setw(nTitle) << setfill(' ') << movies[i].name;
       else
-        cout << movies[i].name.substr(0, nTitle - 4) << "... ";
+        stream << movies[i].name.substr(0, nTitle - 4) << "... ";
 
     // Movie Director
     if (fields[movieFieldDirector])
     {
       if (movies[i].director.length() < nDirector)
-        cout << setw(nDirector) << setfill(' ') << movies[i].director;
+        stream << setw(nDirector) << setfill(' ') << movies[i].director;
       else
-        cout << movies[i].director.substr(0, nDirector - 4) << "... ";
+        stream << movies[i].director.substr(0, nDirector - 4) << "... ";
     }
 
     // Movie Genres
     if (fields[movieFieldGenre])
     {
       if (movies[i].genres[0] == noneGenre)
-        cout << string(nGenre - 1, '-') << ' '; // No Genre
+        stream << string(nGenre - 1, '-') << ' '; // No Genre
       else
       {
         string genres, genre;
@@ -231,36 +235,37 @@ void printMovies(Movie movies[], int m, bool *fields)
         }
 
         if (genres.length() < nGenre)
-          cout << setw(nGenre) << setfill(' ') << genres;
+          stream << setw(nGenre) << setfill(' ') << genres;
         else
-          cout << setw(nGenre - 4) << setfill(' ') << genres.substr(0, nGenre - 4) << "... ";
+          stream << setw(nGenre - 4) << setfill(' ') << genres.substr(0, nGenre - 4) << "... ";
       }
     }
 
     // Movie Duration
     if (fields[movieFieldDuration])
-      cout << setw(nDuration) << setfill(' ') << movies[i].duration;
+      stream << setw(nDuration) << setfill(' ') << movies[i].duration;
 
     // Movie Price
     if (fields[movieFieldPrice])
-      cout << '$' << setw(nPrice - 1) << setfill(' ') << movies[i].price;
+      stream << '$' << setw(nPrice - 1) << setfill(' ') << movies[i].price;
 
     // Movie Release Date
     if (fields[movieFieldRelease])
-      printDate(movies[i].releaseDate, true);
+      addDateToStream(movies[i].releaseDate, true, &stream);
 
     // Movie Rent Status
     if (fields[movieFieldStatus])
       if (!movies[i].rentStatus)
-        cout << setw(nStatus) << setfill(' ') << "No";
+        stream << setw(nStatus) << setfill(' ') << "No";
       else
       {
-        cout << setw(nStatus) << setfill(' ') << "Yes";
-        printDate(movies[i].rentOn, true);
-        cout << setw(nRentTo) << setfill(' ') << left << movies[i].rentTo;
+        stream << setw(nStatus) << setfill(' ') << "Yes";
+        addDateToStream(movies[i].rentOn, true, &stream);
+        stream << setw(nRentTo) << setfill(' ') << left << movies[i].rentTo;
       }
-    cout << '\n';
+    stream << '\n';
   }
+  cout << stream.str();
 }
 
 // Function to Print Dates
@@ -274,6 +279,19 @@ void printDate(int date[], bool rightJustified)
     cout << setw(nYear) << setfill('0') << date[0] << '-'
          << setw(nMonth) << setfill('0') << date[1] << '-'
          << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ');
+}
+
+// Function to Add Dates to ostringstream
+void addDateToStream(int date[], bool rightJustified, ostringstream *stream)
+{
+  if (rightJustified)
+    *stream << setw(nYear) << setfill('0') << right << date[0] << '-'
+            << setw(nMonth) << setfill('0') << date[1] << '-'
+            << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ') << left;
+  else
+    *stream << setw(nYear) << setfill('0') << date[0] << '-'
+            << setw(nMonth) << setfill('0') << date[1] << '-'
+            << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ');
 }
 
 // Function to Print Client Info
@@ -318,7 +336,7 @@ void printClients(Client clients[], int m, bool *fields)
   const int nAddress = 35;     // ... for Address
 
   int nName = nChar; // Decrease the Number of Characters Used by the Name Field
-  int n = clientFieldEnd - 1;
+  int n = clientFieldEnd;
 
   int fieldsNChar[n] = {nId, 0, nPhoneNumber, nAddress}; // Number of Characters per Field
 
@@ -337,6 +355,8 @@ void printClients(Client clients[], int m, bool *fields)
   // Print Clients
   string temp;
 
+  ostringstream stream;
+  stream << left;
   for (int i = 0; i < m; i++)
   {
     name = clients[i].name;       // Client Name
@@ -344,26 +364,27 @@ void printClients(Client clients[], int m, bool *fields)
 
     // Client Id
     if (fields[clientFieldId])
-      cout << setw(nId) << setfill(' ') << clients[i].id;
+      stream << setw(nId) << setfill(' ') << clients[i].id;
 
     // Client Title
     if (fields[clientFieldName])
       if (name.length() < nName)
-        cout << setw(nName) << setfill(' ') << name;
+        stream << setw(nName) << setfill(' ') << name;
       else
-        cout << name.substr(0, nName - 4) << "... ";
+        stream << name.substr(0, nName - 4) << "... ";
 
     // Client Phone Number
     if (fields[clientFieldPhoneNumber])
-      cout << setw(nPhoneNumber) << setfill(' ') << clients[i].phoneNumber;
+      stream << setw(nPhoneNumber) << setfill(' ') << clients[i].phoneNumber;
 
     // Client Address
     if (fields[clientFieldAddress])
       if (address.length() < nName)
-        cout << setw(nName) << setfill(' ') << address;
+        stream << setw(nName) << setfill(' ') << address;
       else
-        cout << address.substr(0, nName - 4) << "... ";
+        stream << address.substr(0, nName - 4) << "... ";
 
-    cout << '\n';
+    stream << '\n';
   }
+  cout << stream.str();
 }

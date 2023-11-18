@@ -1,6 +1,7 @@
-#include "ansiEsc.h"
 #include <iostream>
-#include "..\namespaces.h"
+
+#include "ansiEsc.h"
+#include "../namespaces.h"
 
 using namespace std;
 using namespace clients;
@@ -40,6 +41,7 @@ bool booleanQuestion(string message)
     getline(cin, input);
 
     c = tolower(input[0]);
+
     if (c == 'y')
     {
       cout << '\n';
@@ -114,7 +116,7 @@ void wrongMovieData(invalidMovie wrongData)
     message.append("Release Date");
     break;
   case movieExists:
-    message = "Error: Movie Exists";
+    message = "Exists";
     break;
   }
   pressEnterToCont(message, true);
@@ -134,7 +136,7 @@ void wrongClientData(invalidClient wrongData)
     message.append("Phone Number");
     break;
   case clientExists:
-    message = "Error: Client Exists";
+    message = "Exists";
     break;
   }
   pressEnterToCont(message, true);
