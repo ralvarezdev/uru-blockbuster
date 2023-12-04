@@ -131,10 +131,12 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
     clientStatus = checkClientStatusById(clients, *nClientsRead, clientId, &clientIndex); // Should be in clients.cpp
 
     if (clientStatus == clientNotFound)
+    {
+      client.id = clientId;
       createClientWithId(clients, client, nClientsRead, &clientIndex);
+    }
 
-    client.id = clientId;
-    movies[movieIndex].rentTo = client.id;
+    movies[movieIndex].rentTo = clientId;
     movies[movieIndex].rentStatus = true; // Rented
 
     ofstream outfile(moviesFilename); // Update the movies.csv file with the Movie that was Rented
