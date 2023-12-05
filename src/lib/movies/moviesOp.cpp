@@ -5,10 +5,13 @@
 #include <iostream>
 #include <sstream>
 
+// #define NDEBUG
+#include <assert.h>
+
+#include "../namespaces.h"
 #include "../datatables/output.h"
 #include "../terminal/ansiEsc.h"
 #include "../terminal/input.h"
-#include "../namespaces.h"
 
 using namespace std;
 using namespace commands;
@@ -17,45 +20,47 @@ using namespace movies;
 using namespace terminal;
 
 // --- Extern Variables Declaration
-extern string *genrePtr;
+extern bool movieValidFieldsToFilter[];
+extern char *genreStr[];
 
 // --- Functions Prototypes
-int getMovies(Movie movies[]);
-void addMovieToFile(Movie movies[], int *nMoviesRead);
-movieStatus checkMovieStatusById(Movie movies[], int nMoviesRead, int id, int *index);
+movieStatus getMovieId(Movies *movies, int *id, int *index, string message);
+void getMovies(Movies *movies);
+void addMovieToFile(Movies *movies);
+movieStatus checkMovie(Movies *movies, int id, int *index);
 void getGenres(string word, int genres[], int n);
 int getGenreIndex(string genre);
 int getGenreIndexLower(string genre);
 void getDate(string word, int date[], int n);
-void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], bool fields[], int sortBy[]);
+void filterMovies(Movies *movies, string **params, bool fields[], int sortBy[]);
 void addFilteredMovie(int filteredIds[], int nMoviesRead, int id, int *counter);
 int binarySearch(int A[], int n, int num);
 void insertionSortWithPivot(int A[], int n, int pivot);
-void sortMovies(Movie movies[], int m, int sortBy[], int n);
-void moviesMergeSort(Movie movies[], int n, int sortByIndex);
-void moviesMerge(Movie movies[], Movie sorted[], int low, int mid, int high, int sortByIndex);
-string getGenresStr(int genres[], int nGenres);
+void sortMovies(Movies *movies, int sortBy[], int n);
+void moviesMergeSort(Movies *movies, int sortByIndex);
+void moviesMerge(Movies *movies, Movie sorted[], int low, int mid, int high, int sortByIndex);
+string getGenresStr(int genres[]);
 string getDateStr(int date[3]);
-int getMovieId(string message);
 string getCurrentDate(int date[]);
 
 // Function to Get an Array of Movies from movies.csv
-int getMovies(Movie movies[])
+void getMovies(Movies *movies)
 {
   int genres[genreEnd], date[3];
   string director[2];
-  int count = 0, nline = 0, nMoviesRead;
+  int nMovies, count;
   string line, word;
 
-  ifstream infile(moviesFilename);
+  ifstream moviesCSV(moviesFilename);
 
-  if (!infile.is_open())
-  { // Couldn't Access to infile
-    infile.close();
+  if (!moviesCSV.is_open())
+  { // Couldn't Access to moviesCSV
+    moviesCSV.close();
     pressEnterToCont("Error: File Not Found. Press ENTER to go Back to Main Menu", true);
+    return; // End this Function
   }
 
-  while (getline(infile, line) && nMovies >= nMoviesRead)
+  while (getline(moviesCSV, line)) // Get Movies
     try
     {
       if (line.length() == 0)
@@ -64,6 +69,7 @@ int getMovies(Movie movies[])
       fill(genres, genres + genreEnd, -1); // Initialize Genres Array
 
       stringstream file(line);
+      Movie newMovie;
 
       count = 0;
       while (getline(file, word, sep))
@@ -72,55 +78,58 @@ int getMovies(Movie movies[])
           switch (count)
           {
           case 0:
-            movies[nline].id = stoi(word);
+            newMovie.id = stoi(word);
             break;
           case 1:
-            movies[nline].name = word;
+            newMovie.name = word;
             break;
           case 2:
             getGenres(word, genres, nMaxGenres);
             for (int i = 0; i < genreEnd; i++)
-              movies[nline].genres[i] = genres[i];
+              newMovie.genres[i] = genres[i];
             break;
           case 3:
-            movies[nline].duration = stoi(word);
+            newMovie.duration = stoi(word);
             break;
           case 4:
-            movies[nline].director = word;
+            newMovie.director = word;
             break;
           case 5:
-            movies[nline].price = stof(word);
+            newMovie.price = stof(word);
             break;
           case 6:
             getDate(word, date, 3);
             for (int i = 0; i < 3; i++)
-              movies[nline].releaseDate[i] = date[i];
+              newMovie.releaseDate[i] = date[i];
             break;
           case 7:
-            movies[nline].rentTo = stoi(word); // Client ID
+            newMovie.rentTo = stoi(word); // Client ID
             break;
           case 8:
             getDate(word, date, 3);
             for (int i = 0; i < 3; i++)
-              movies[nline].rentOn[i] = date[i]; // Rent Date
+              newMovie.rentOn[i] = date[i]; // Rent Date
             break;
           case 9:
-            movies[nline].rentStatus = stoi(word); // Rent Status (Yes for Rented)
+            newMovie.rentStatus = stoi(word); // Rent Status (Yes for Rented)
             break;
           }
         count++;
       }
-      nline++;
-      nMoviesRead = nline;
+
+#ifndef NDEBUG
+      nMovies = (*movies).getNumberMovies();
+#endif
+
+      (*movies).pushBack(newMovie);
+      assert(nMovies == (*movies).getNumberMovies() - 1); // Checks if the Number of Movies Gets Increased
     }
     catch (...)
     {
       // It will Ignore the Line that was Read from movies.csv
     }
 
-  infile.close();
-
-  return nMoviesRead;
+  moviesCSV.close();
 }
 
 // Function to Get Movie Genres
@@ -142,7 +151,7 @@ void getGenres(string word, int genres[], int n)
 int getGenreIndex(string genre)
 {
   for (int i = 0; i < genreEnd; i++)
-    if (genre == genrePtr[i] || i == errorGenre)
+    if (genre == genreStr[i] || i == errorGenre)
       return i;
     else
       continue;
@@ -154,7 +163,7 @@ int getGenreIndex(string genre)
 int getGenreIndexLower(string genre)
 {
   for (int i = 0; i < genreEnd; i++)
-    if (getLower(genre) == getLower(genrePtr[i]) || i == errorGenre)
+    if (getLower(genre) == getLower(genreStr[i]) || i == errorGenre)
       return i;
     else
       continue;
@@ -174,119 +183,135 @@ void getDate(string word, int date[], int n)
 }
 
 // Function that Returns Movie Indexes that Matched with the Parameters
-void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], bool fields[], int sortBy[])
+void filterMovies(Movies *movies, string **params, bool fields[], int sortBy[])
 {
   movieStatus movieStatus;
-  int i, j, n, id, compare, sortByInt, index, genreIndex, idCounter = 0;
+  Movie movie;
+  int i, j, id, compare, index, genreIndex, sortByInt, counter = 0, nMoviesRead = (*movies).getNumberMovies();
   string compareLower, nameLower;
+
+  assert(nMoviesRead > 0); // Check if the Number of Movies is Greater than 0
 
   int *filteredIds = new int[nMoviesRead];          // Allocate Memory
   fill(filteredIds, filteredIds + nMoviesRead, -1); // Fill Array with -1 Values
 
   for (int field = 0; field < movieFieldEnd - 1; field++)
   {
-    if (counter[field] == 0) // Check if the Function can Filter that Field, and if there are Parameters
+    if (movieValidFieldsToFilter[field] && params[field][0] == "null") // Check if the Function can Filter that Field, and if there are Parameters
       continue;
 
-    for (int param = 0; param < maxParamPerSubCmd && param < counter[field]; param++)
+    for (int param = 0; param < maxParamPerSubCmd && params[field][param] != "null"; param++)
     {
       switch (field)
       {
       case movieFieldId:
         id = stoi(params[field][param]);
-        movieStatus = checkMovieStatusById(movies, nMoviesRead, id, &index); // Binary Search
+        movieStatus = checkMovie(movies, id, &index); // Binary Search
 
         // Checks if the Movie has Already being Filtered
         if (movieStatus != movieNotFound && binarySearch(filteredIds, nMoviesRead, id) == -1)
-          addFilteredMovie(filteredIds, nMoviesRead, id, &idCounter);
+          addFilteredMovie(filteredIds, nMoviesRead, id, &counter);
 
       case movieFieldName:
       case movieFieldDirector:
         compareLower = getLower(params[field][param]); // Get Movie Name or Director To Search for in Lowercase
 
         // Checks if the Movie Name or Director Name in Lowercase Contains the Parameter that is being Searched by Linear Search
-        for (i = 0; i < nMoviesRead && idCounter != nMoviesRead; i++)
+        for (i = 0; i < nMoviesRead && counter != nMoviesRead; i++)
         {
-          nameLower = (field == movieFieldName) ? getLower(movies[i].name) : getLower(movies[i].director);
+          movie = (*movies).getMovie(i);
 
-          if (binarySearch(filteredIds, nMoviesRead, movies[i].id) == -1 && nameLower.find(compareLower) != string::npos)
-            addFilteredMovie(filteredIds, nMoviesRead, movies[i].id, &idCounter);
+          nameLower = (field == movieFieldName) ? getLower(movie.name) : getLower(movie.director);
+
+          if (binarySearch(filteredIds, nMoviesRead, movie.id) == -1 && nameLower.find(compareLower) != string::npos)
+            addFilteredMovie(filteredIds, nMoviesRead, movie.id, &counter);
         }
         break;
 
       case movieFieldDuration:
       case movieFieldPrice:
         compare = stoi(params[field][param]); // Integer to Compare, it Could be Either the Duration or the Price
-        sortByInt = (field == movieFieldDuration) ? movieSortByDurationA : movieSortByPriceA;
+        sortByInt = (field == movieFieldDuration) ? movieFieldDuration * 2 : movieFieldPrice * 2;
 
-        moviesMergeSort(movies, nMoviesRead, sortByInt); // Sort Movies by Either the Duration or the Price
+        moviesMergeSort(movies, sortByInt); // Sort Movies by Either the Duration or the Price
 
         if (field == movieFieldDuration)
         {
-          for (i = 0; i < nMoviesRead && movies[i].duration <= compare && idCounter != nMoviesRead; i++)
-            if (binarySearch(filteredIds, nMoviesRead, movies[i].id) == -1)
-              addFilteredMovie(filteredIds, nMoviesRead, movies[i].id, &idCounter);
+          for (i = 0; i < nMoviesRead && (*movies).getMovie(i).duration <= compare && counter != nMoviesRead; i++)
+          {
+            movie = (*movies).getMovie(i);
+
+            if (binarySearch(filteredIds, nMoviesRead, movie.id) == -1)
+              addFilteredMovie(filteredIds, nMoviesRead, movie.id, &counter);
+          }
         }
         else if (field == movieFieldPrice)
         {
-          for (i = 0; i < nMoviesRead && movies[i].price <= compare && idCounter != nMoviesRead; i++)
-            if (binarySearch(filteredIds, nMoviesRead, movies[i].id) == -1)
-              addFilteredMovie(filteredIds, nMoviesRead, movies[i].id, &idCounter);
+          for (i = 0; i < nMoviesRead && movie.price <= compare && counter != nMoviesRead; i++)
+          {
+            movie = (*movies).getMovie(i);
+
+            if (binarySearch(filteredIds, nMoviesRead, movie.id) == -1)
+              addFilteredMovie(filteredIds, nMoviesRead, movie.id, &counter);
+          }
         }
         break;
 
       case movieFieldGenre:
         genreIndex = getGenreIndex(params[field][param]); // Get Genre Index in Type of Genres Array
 
-        for (i = 0; i < nMoviesRead && idCounter != nMoviesRead; i++)
-          for (j = 0; j < nMaxGenres && movies[i].genres[j] != -1; j++)
-            if (movies[i].genres[j] == genreIndex) // Coincidence
-              if (binarySearch(filteredIds, nMoviesRead, movies[i].id) == -1)
+        for (i = 0; i < nMoviesRead && counter != nMoviesRead; i++)
+        {
+          movie = (*movies).getMovie(i);
+
+          for (j = 0; j < nMaxGenres && movie.genres[j] != -1; j++)
+            if (movie.genres[j] == genreIndex) // Coincidence
+              if (binarySearch(filteredIds, nMoviesRead, movie.id) == -1)
               {
-                addFilteredMovie(filteredIds, nMoviesRead, movies[i].id, &idCounter);
+                addFilteredMovie(filteredIds, nMoviesRead, movie.id, &counter);
                 break;
               }
+        }
         break;
 
-        // case movieFieldRelease:
+        // case movieFieldRelease: // NOT DEFINED
       }
 
-      if (idCounter == nMoviesRead)
+      if (counter == nMoviesRead)
         break; // Max Number of Coincidences Reached
     }
 
-    if (idCounter == nMoviesRead)
+    if (counter == nMoviesRead)
       break; // Max Number of Coincidences Reached
   }
 
   /* // For Testing
   string temp;
-  cout << idCounter;
+  cout << counter;
   cin >> temp;
   */
 
-  Movie *filteredMovies = new Movie[idCounter];
+  Movies filteredMovies = Movies(counter);
 
-  n = 0;
-  for (i = nMoviesRead - idCounter; i < nMoviesRead; i++)
+  for (i = nMoviesRead - counter; i < nMoviesRead; i++)
   {
-    checkMovieStatusById(movies, nMoviesRead, filteredIds[i], &index);
-    filteredMovies[n++] = movies[index]; // Save Movie that has been Filtered to Array
+    checkMovie(movies, filteredIds[i], &index);         // Get Movie Index
+    filteredMovies.pushBack((*movies).getMovie(index)); // Save Movie that has been Filtered to Array
   }
 
-  sortMovies(filteredMovies, idCounter, sortBy, movieSortByEnd / 2); // Sort Movies
-  printMovies(filteredMovies, idCounter, fields);                    // Print Movies
+  sortMovies(&filteredMovies, sortBy, movieFieldEnd - 1); // Sort Movies
+  printMovies(&filteredMovies, fields);                   // Print Movies
 
   string message = "Number of Coincidences: ";
-  message.append(to_string(idCounter));
+  message.append(to_string(counter));
 
-  if (idCounter == 0)
+  if (counter == 0)
     cout << string(nChar, '-') << '\n';
 
   cout << '\n';
-  printTitle(message, applyBgColor, applyFgColor, (idCounter == 0) ? true : false); // Print Number of Coincidences
+  printTitle(message, applyBgColor, applyFgColor, (counter == 0) ? true : false); // Print Number of Coincidences
 
-  delete[] filteredMovies;
+  filteredMovies.deallocate(); // Deallocate Memory
   delete[] filteredIds;
 }
 
@@ -346,201 +371,154 @@ int binarySearch(int A[], int n, int num)
 }
 
 // Function to Add Movie
-void addMovieToFile(Movie movies[], int *nMoviesRead)
+void addMovieToFile(Movies *movies)
 {
-  if (*nMoviesRead >= nMovies)
-    pressEnterToCont("The Maximum Number of Movies has been Reached", true);
-  else
+
+  Movie newMovie = Movie();
+  fill(newMovie.genres, newMovie.genres + genreEnd, -1); // Initialize Genres Array
+
+  bool wrongGenre;
+  int nGenres = 0, i, id, index;
+  movieStatus check;
+  string temp, date;
+
+  string release;
+
+  check = getMovieId(movies, &id, &index, "ID: "); // Get Movie ID
+
+  if (check != movieNotFound)
+  { // The Id has been Added to that File
+    wrongMovieData(movieExists);
+    return; // End this Function
+  }
+
+  cout << "Title: "; // Get Movie Title
+  getline(cin, newMovie.name);
+
+  while (true) // Get Movie Genres
+    try
+    {
+      cout << "Genre: ";
+      getline(cin, temp);
+
+      wrongGenre = true;
+      for (i = 0; i < genreEnd; i++)
+        if (getLower(genreStr[i]) == getLower(temp))
+        {
+          wrongGenre = false; // Valid Genre
+          break;
+        }
+
+      if (wrongGenre)
+        throw(-1); // Invalid Genre
+
+      newMovie.genres[nGenres++] = i;
+
+      if (nGenres == nMaxGenres)
+        cout << "- Maximum Ammount of Genres Added";
+      else if (!booleanQuestion("Do you want to Add more Genres?"))
+        break;
+    }
+    catch (...)
+    {
+      wrongMovieData(invalidMovieGenre);
+    }
+
+  newMovie.duration = getInteger("Movie Duration: ", 0, 500); // Get Movie Duration
+
+  cout << "Enter Name of Director: ";
+  getline(cin, temp);
+  newMovie.director = temp;
+
+  newMovie.price = getInteger("Movie Price: ", 0, 1000); // Get Movie Price
+
+  while (true) // Get Release Date
   {
-    Movie newMovie = Movie();
-    fill(newMovie.genres, newMovie.genres + genreEnd, -1); // Initialize Genres Array
+    try
+    {
+      cout << "Release Date (YYYY-MM-DD): ";
+      cin >> temp;
 
-    bool wrongGenre;
-    int nGenres = 0, i, index;
-    movieStatus check;
-    string temp, date;
+      stringstream stream(temp);
 
-    string release;
-
-    while (true) // Get Movie ID
-      try
+      for (int i = 0; i < 3; i++)
       {
-        cout << "ID: ";
-        getline(cin, temp);
-        newMovie.id = stoi(temp);
+        getline(stream, date, dateSep);
+        newMovie.releaseDate[i] = stoi(date);
+      }
 
-        check = checkMovieStatusById(movies, *nMoviesRead, newMovie.id, &index);
-        if (newMovie.id <= 0)
-          throw(-1); // ID Must be in the Range 0<ID<n
+      if (newMovie.releaseDate[0] < 1800)
+        throw(-1); // Wrong Year of Release
+      else if (newMovie.releaseDate[1] < 0 || newMovie.releaseDate[1] > 12)
+        throw(-1); // Wrong Month of Release
+      else
+      {
+        int year = newMovie.releaseDate[0];
+        int month = newMovie.releaseDate[1];
+        int day = newMovie.releaseDate[2];
+
+        if (day < 0)
+          throw(-1); // Wrong Day of Release
+        else if ((month % 2 == 1 && month <= 7) || (month % 2 == 0 && month > 7))
+        {
+          if (day < 0 || day > 31)
+            throw(-1); // That Month should have 31 Days
+        }
+        else if (month != 2 && (day < 0 || day > 30))
+          throw(-1); // That Month should have 30 Days
+        else if (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0))
+        {
+          if (day < 0 || day > 29)
+            throw(-1); // That Month should have 29 Days
+        }
+        else if (day < 0 || day > 28)
+          throw(-1); // That Month should have 28 Days
         break;
       }
-      catch (...)
-      {
-        wrongMovieData(invalidMovieId);
-      }
-
-    if (check != movieNotFound) // The Id has been Added to that File
-      wrongMovieData(movieExists);
-    else
+    }
+    catch (...)
     {
-      cout << "Title: "; // Get Movie Title
-      getline(cin, newMovie.name);
-
-      while (true) // Get Movie Genres
-        try
-        {
-          cout << "Genre: ";
-          getline(cin, temp);
-
-          wrongGenre = true;
-          for (i = 0; i < genreEnd; i++)
-            if (getLower(genrePtr[i]) == getLower(temp))
-            {
-              wrongGenre = false; // Valid Genre
-              break;
-            }
-
-          if (wrongGenre)
-            throw(-1); // Invalid Genre
-
-          newMovie.genres[nGenres++] = i;
-
-          if (nGenres == nMaxGenres)
-            cout << "- Maximum Ammount of Genres Added";
-          else if (!booleanQuestion("Do you want to Add more Genres?"))
-            break;
-        }
-        catch (...)
-        {
-          wrongMovieData(invalidMovieGenre);
-        }
-
-      while (true) // Get Movie Duration
-        try
-        {
-          cout << "Movie Duration: ";
-          getline(cin, temp);
-          newMovie.duration = stoi(temp);
-
-          if (newMovie.duration <= 0)
-            throw(-1); // Wrong Duration
-          break;
-        }
-        catch (...)
-        {
-          wrongMovieData(invalidMovieDuration);
-        }
-
-      cout << "Enter Name of Director: ";
-      getline(cin, temp);
-      newMovie.director = temp;
-
-      while (true) // Get Movie Price
-        try
-        {
-          cout << "Price: ";
-          cin >> temp;
-          newMovie.price = stoi(temp);
-
-          if (newMovie.price < 0)
-            throw(-1); // Wrong Price
-          break;
-        }
-        catch (...)
-        {
-          wrongMovieData(invalidMoviePrice);
-        }
-
-      while (true) // Get Release Date
-      {
-        try
-        {
-          cout << "Release Date (YYYY-MM-DD): ";
-          cin >> temp;
-
-          stringstream stream(temp);
-
-          for (int i = 0; i < 3; i++)
-          {
-            getline(stream, date, dateSep);
-            newMovie.releaseDate[i] = stoi(date);
-          }
-
-          if (newMovie.releaseDate[0] < 1800)
-            throw(-1); // Wrong Year of Release
-          else if (newMovie.releaseDate[1] < 0 || newMovie.releaseDate[1] > 12)
-            throw(-1); // Wrong Month of Release
-          else
-          {
-            int year = newMovie.releaseDate[0];
-            int month = newMovie.releaseDate[1];
-            int day = newMovie.releaseDate[2];
-
-            if (day < 0)
-              throw(-1); // Wrong Day of Release
-            else if ((month % 2 == 1 && month <= 7) || (month % 2 == 0 && month > 7))
-            {
-              if (day < 0 || day > 31)
-                throw(-1); // That Month should have 31 Days
-            }
-            else if (month != 2 && (day < 0 || day > 30))
-              throw(-1); // That Month should have 30 Days
-            else if (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0))
-            {
-              if (day < 0 || day > 29)
-                throw(-1); // That Month should have 29 Days
-            }
-            else if (day < 0 || day > 28)
-              throw(-1); // That Month should have 28 Days
-            break;
-          }
-        }
-        catch (...)
-        {
-          wrongMovieData(invalidMovieDate);
-        }
-      }
-
-      movies[*nMoviesRead] = newMovie;
-      *nMoviesRead = *nMoviesRead + 1;
-
-      string genresStr = getGenresStr(newMovie.genres, nGenres);
-      string dateStr = getDateStr(newMovie.releaseDate);
-
-      ofstream outfile(moviesFilename, ios::app); // Write to File
-      outfile << newMovie.id << sep << newMovie.name << sep << genresStr
-              << sep << newMovie.duration << sep << newMovie.director
-              << sep << newMovie.price << sep << dateStr << ";;;\n";
-
-      outfile.close();
-
-      cout << '\n';
-      pressEnterToCont("Movie Added Successfully!", false);
+      wrongMovieData(invalidMovieDate);
     }
   }
+
+  (*movies).pushBack(newMovie);
+
+  string genresStr = getGenresStr(newMovie.genres);
+  string dateStr = getDateStr(newMovie.releaseDate);
+
+  ofstream moviesCSV(moviesFilename, ios::app); // Write to File
+  moviesCSV << newMovie.id << sep << newMovie.name << sep << genresStr
+            << sep << newMovie.duration << sep << newMovie.director
+            << sep << newMovie.price << sep << dateStr << ";;;\n";
+
+  moviesCSV.close();
+
+  cout << '\n';
+  pressEnterToCont("Movie Added Successfully!", false);
 }
 
 // Function to Get Movie Rent Status
-movieStatus checkMovieStatusById(Movie movies[], int nMoviesRead, int id, int *index)
+movieStatus checkMovie(Movies *movies, int id, int *index)
 {
-  moviesMergeSort(movies, nMoviesRead, movieSortByIdA); // Sort Movies by Id
-
   bool found;
   int value;
-  int mid, start = 0, end = nMoviesRead - 1;
+  int mid, start = 0, end = (*movies).getNumberMovies() - 1;
   string line;
+
+  moviesMergeSort(movies, movieFieldId * 2); // Sort Movies by Id
 
   while (start <= end)
   { // Binary Search
     mid = start + (end - start) / 2;
 
-    value = movies[mid].id;
+    value = (*movies).getMovie(mid).id;
     found = (value == id);
 
     if (found)
     {
       *index = mid;
-      return (movies[mid].rentStatus == 0) ? movieNotRented : movieRented;
+      return ((*movies).getMovie(mid).rentStatus == 0) ? movieNotRented : movieRented;
     }
     else if (id > value)
       start = mid + 1;
@@ -551,19 +529,19 @@ movieStatus checkMovieStatusById(Movie movies[], int nMoviesRead, int id, int *i
 }
 
 // Function to Sort Movies (Uses Merge Sort)
-void sortMovies(Movie movies[], int m, int sortBy[], int n)
+void sortMovies(Movies *movies, int sortBy[], int n)
 {
   for (int i = 0; i < n; i++)
     if (sortBy[i] != -1)
-      moviesMergeSort(movies, m, sortBy[i]);
+      moviesMergeSort(movies, sortBy[i]);
 }
 
 // - Merge Sort
 // O(n*logn)
 // Stable
-void moviesMergeSort(Movie movies[], int n, int sortByIndex)
+void moviesMergeSort(Movies *movies, int sortByIndex)
 {
-  int pass, low, high, mid, i;
+  int pass, low, high, mid, i, n = (*movies).getNumberMovies();
   Movie *sorted = new Movie[n]; // Store the Array in the Heap Memory
 
   for (pass = 2; pass <= n; pass *= 2)
@@ -590,21 +568,11 @@ void moviesMergeSort(Movie movies[], int n, int sortByIndex)
   delete[] sorted; // Deallocate Memory
 
   if (sortByIndex % 2 != 0) // True if it's an Odd Number, which is Used for Descending Order
-  {
-    int j = 0;
-    Movie temp;
-
-    for (i = n - 1; i > (n - 1) / 2; i--)
-    {
-      temp = movies[j];
-      movies[j++] = movies[i];
-      movies[i] = temp;
-    }
-  }
+    (*movies).reverse();    // Reverse Array
 }
 
 // Function to Merge Movies Subarrays
-void moviesMerge(Movie movies[], Movie sorted[], int low, int mid, int high, int sortByIndex)
+void moviesMerge(Movies *movies, Movie sorted[], int low, int mid, int high, int sortByIndex)
 {
   int i = low, j = mid + 1, k = low;
   string firstTitle, secondTitle; // Used when Sorting the Array by Title
@@ -612,93 +580,67 @@ void moviesMerge(Movie movies[], Movie sorted[], int low, int mid, int high, int
 
   switch (sortByIndex / 2)
   {
-  case movieSortByDurationA / 2:
+  case commands::movieFieldId:
     while (i <= mid && j <= high)
-      if (movies[i].duration < movies[j].duration)
-        sorted[k++] = movies[i++];
-      else
-        sorted[k++] = movies[j++];
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldId, 1);
     break;
-
-  case movieSortByIdA / 2:
+  case commands::movieFieldName:
     while (i <= mid && j <= high)
-      if (movies[i].id < movies[j].id)
-        sorted[k++] = movies[i++];
-      else
-        sorted[k++] = movies[j++];
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldName, 1);
     break;
-
-  case movieSortByPriceA / 2:
+  case commands::movieFieldDirector:
     while (i <= mid && j <= high)
-      if (movies[i].price < movies[j].price)
-        sorted[k++] = movies[i++];
-      else
-        sorted[k++] = movies[j++];
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldDirector, 1);
     break;
-
-  case movieSortByTitleA / 2:
+  // case commands::movieFieldGenre: // NOT DEFINED
+  case commands::movieFieldDuration:
     while (i <= mid && j <= high)
-    {
-      firstTitle = movies[i].name;
-      secondTitle = movies[j].name;
-
-      if (firstTitle.compare(secondTitle) < 0)
-        sorted[k++] = movies[i++];
-      else
-        sorted[k++] = movies[j++];
-    }
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldDuration, 1);
     break;
-
-  case movieSortByReleaseA / 2:
+  case commands::movieFieldPrice:
     while (i <= mid && j <= high)
-    {
-      for (int n = 0; n < 3; n++)
-        if (movies[i].releaseDate[n] != movies[j].releaseDate[n])
-        {
-          op = movies[i].releaseDate[n] < movies[j].releaseDate[n];
-          break;
-        }
-        else if (n == 2)
-          op = false;
-
-      if (op)
-        sorted[k++] = movies[i++];
-      else
-        sorted[k++] = movies[j++];
-    }
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldPrice, 1);
     break;
-
-  case movieSortByRentToA / 2:
+  case commands::movieFieldRelease:
     while (i <= mid && j <= high)
-      if (movies[i].rentTo < movies[j].rentTo)
-        sorted[k++] = movies[i++];
-      else
-        sorted[k++] = movies[j++];
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldRelease, 1);
+    break;
+  case commands::movieFieldStatus:
+    while (i <= mid && j <= high)
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldStatus, 1);
+    break;
+  case commands::movieFieldRentOn:
+    while (i <= mid && j <= high)
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldRentOn, 1);
+    break;
+  case commands::movieFieldRentTo:
+    while (i <= mid && j <= high)
+      sorted[k++] = (*movies).compare(&i, &j, movieFieldRentTo, 1);
     break;
   }
 
   while (i <= mid)
-    sorted[k++] = movies[i++];
+    sorted[k++] = (*movies).getMovie(i++);
   while (j <= high)
-    sorted[k++] = movies[j++];
+    sorted[k++] = (*movies).getMovie(j++);
 
   for (i = low; i <= high; i++)
-    movies[i] = sorted[i];
+    (*movies).insertAt(i, sorted[i]);
 }
 
 // Function to Get Genres as a Str
-string getGenresStr(int genres[], int nGenres)
+string getGenresStr(int genres[])
 {
   string genresStr;
 
-  for (int i = 0; i < nGenres && genres[i] != -1; i++) // Get Movie Genres as a String
+  for (int i = 0; i < nMaxGenres && genres[i] != -1; i++) // Get Movie Genres as a String
     if (i != 0)
     {
       genresStr += genreSep;
-      genresStr.append(genrePtr[genres[i]]);
+      genresStr.append(genreStr[genres[i]]);
     }
     else
-      genresStr = genrePtr[genres[0]];
+      genresStr = genreStr[genres[0]];
 
   return genresStr;
 }
@@ -718,16 +660,21 @@ string getDateStr(int date[3])
 }
 
 // Function to Ask for Movie Id
-int getMovieId(string message)
+movieStatus getMovieId(Movies *movies, int *id, int *index, string message)
 {
   string temp;
 
-  while (true)
-    try // Get Movie ID
+  while (true) // Get Movie ID
+    try
     {
       cout << message << ": ";
       getline(cin, temp);
-      return stoi(temp);
+      *id = stoi(temp);
+
+      if (*id <= 0)
+        throw(-1); // ID Must be in the Range 0<ID<n
+
+      return checkMovie(movies, *id, index);
     }
     catch (...)
     {

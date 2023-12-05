@@ -3,6 +3,9 @@
 #include <sstream>
 #include <string>
 
+// #define NDEBUG
+#include <assert.h>
+
 #include "clientsOp.h"
 #include "../namespaces.h"
 #include "../datatables/output.h"
@@ -14,8 +17,12 @@ using namespace clients;
 using namespace files;
 using namespace terminal;
 
+// --- Extern Variables Declaration
+extern bool clientValidFieldsToFilter[];
+
 // --- Function Prototypes
-clientStatus getClientId(Clients *clients, int *id, int *index, string message);
+clientStatus
+getClientId(Clients *clients, int *id, int *index, string message);
 void getClients(Clients *clients);
 void addClientToFile(Clients *clients);
 void createClientWithId(Clients *clients, Client newClient, int *index);
@@ -51,7 +58,7 @@ void getClients(Clients *clients)
     nClients = (*clients).getNumberClients();
 #endif
 
-    (*clients).pushBack(newClient);
+    (*clients).pushBack(clientRead);
     assert(nClients == (*clients).getNumberClients() - 1); // Check if the Number of Clients Gets Increased
   }
 
@@ -69,11 +76,12 @@ void addClientToFile(Clients *clients)
 
   if (check != clientNotFound) // The Id has been Added to that File
   {
-    assert(id >= 0 && index >= 0); // Check Client Id and Index
+    assert(id > 0 && index == -1); // Check Client Id and Index
     wrongClientData(clientExists);
     return; // End this Function
   }
 
+  assert(id > 0 && index >= 0); // Check Client Id and Index
   createClientWithId(clients, newClient, &index);
 }
 
@@ -88,18 +96,7 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
   for (int i = 0; i < nFieldChars && i < temp.length(); i++)
     newClient.name[i] = temp[i];
 
-  while (true) // Get Client Phone Number
-    try
-    {
-      cout << "Phone Number: ";
-      getline(cin, temp);
-      newClient.phoneNumber = stoi(temp);
-      break;
-    }
-    catch (...)
-    {
-      wrongClientData(invalidClientPhoneNumber);
-    }
+  newClient.phoneNumber = getDouble("Phone Number: ", 0, 100000000000, 0); // Get Client Phone Number
 
   // Get Client Account Number
   newClient.account = (*clients).getClient(nClients - 1).account + 1; // Previously, Sorted by Id in Ascending Order (in getClientId Function)
@@ -118,15 +115,18 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
 void filterClients(Clients *clients, string **params, bool fields[], int sortBy[])
 {
   clientStatus clientStatus;
-  int i, id, account, phoneNumber, index, counter = 0, nClientsRead = (*clients).getNumberClients();
+  double phoneNumber;
+  int i, id, account, index = 0, counter = 0, nClientsRead = (*clients).getNumberClients();
   string nameLower;
+
+  assert(nClientsRead > 0); // Check if the Number of Clients is Greater than 0
 
   bool *filteredIndexes = new bool[nClientsRead];               // Allocate Memory
   fill(filteredIndexes, filteredIndexes + nClientsRead, false); // Fill Array with False Values
 
   for (int field = 0; field < clientFieldEnd - 1; field++)
   {
-    if (counter[field] == 0 && params[field][0] == "null") // Check if the Function can Filter that Field, and if there are Parameters
+    if (clientValidFieldsToFilter[field] == 0 && params[field][0] == "null") // Check if the Function can Filter that Field, and if there are Parameters
       continue;
 
     for (int param = 0; param < maxParamPerSubCmd && params[field][param] != "null"; param++)
@@ -145,6 +145,7 @@ void filterClients(Clients *clients, string **params, bool fields[], int sortBy[
 
         if (clientStatus != clientNotFound && !filteredIndexes[index])
         {                                // Checks if the Client has Already being Filtered
+          assert(index >= 0);            // Check the Client Index
           filteredIndexes[index] = true; // Store Index
           counter++;
         }
@@ -163,7 +164,7 @@ void filterClients(Clients *clients, string **params, bool fields[], int sortBy[
       }
       else if (field == clientFieldPhoneNumber)
       {
-        phoneNumber = stoi(params[field][param]);
+        phoneNumber = stod(params[field][param]);
 
         clientsMergeSort(clients, clientFieldId * 2); // Sort Clients by Id
         for (i = 0; i < nClientsRead; i++)
@@ -273,12 +274,12 @@ void clientsMerge(Clients *clients, Client sorted[], int low, int mid, int high,
   }
 
   while (i <= mid)
-    sorted[k++] = clients[i++];
+    sorted[k++] = (*clients).getClient(i++);
   while (j <= high)
-    sorted[k++] = clients[j++];
+    sorted[k++] = (*clients).getClient(j++);
 
   for (i = low; i <= high; i++)
-    clients[i] = sorted[i];
+    (*clients).insertAt(i, sorted[i]);
 }
 
 // Function to Ask for Client Id

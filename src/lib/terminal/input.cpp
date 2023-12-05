@@ -17,6 +17,8 @@ void wrongCommand(cmdStatus cmdStatus);
 void wrongMovieData(invalidMovie wrongData);
 void wrongClientData(invalidClient wrongData);
 void pressEnterToCont(string message, bool warning);
+int getInteger(string message, int low, int high);
+double getDouble(string message, double low, double high, int precision);
 string getLower(string word);
 
 // --- Functions
@@ -158,6 +160,63 @@ void pressEnterToCont(string message, bool warning)
   printTitle(message, applyBgColor, applyFgColor, warning);
   getline(cin, temp);
   // ignoreInput();
+}
+
+// Function to Ask for a Integer Input
+int getInteger(string message, int low, int high)
+{
+  string temp;
+  int amount;
+
+  while (true)
+    try // Get Integer
+    {
+      cout << message << " : ";
+      getline(cin, temp);
+      amount = stoi(temp);
+
+      if (amount > low && amount <= high)
+        return amount;
+    }
+    catch (...)
+    {
+      ostringstream stream;
+
+      stream << "The Number is Out of that Range"
+             << " [" << low << '-' << high << "]";
+
+      pressEnterToCont(stream.str(), true);
+    }
+  assert(stoi(temp) == -1); // Function Must Not Get to this Assert
+}
+
+// Function to Ask for a Double Input
+double getDouble(string message, double low, double high, int precision)
+{
+  string temp;
+  double amount;
+
+  while (true)
+    try // Get Double
+    {
+      cout << message << " : ";
+      getline(cin, temp);
+      amount = stod(temp);
+
+      if (amount > low && amount <= high)
+
+        return amount;
+    }
+    catch (...)
+    {
+      ostringstream stream;
+
+      stream << "The Number is Out of that Range"
+             << " [" << fixed << setprecision(precision) << low << '-' << high << "]";
+
+      pressEnterToCont(stream.str(), true);
+    }
+  assert(stoi(temp) == -1); // Function Must Not Get to this Assert
 }
 
 // Function to Get a Lowercase String

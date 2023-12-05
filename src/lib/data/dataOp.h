@@ -8,15 +8,30 @@ using namespace clients;
 using namespace movies;
 
 // --- Extern Variables Declaration
-extern bool *movieValidFieldFilterPtr;
-extern int *cmdsPtr, *subCmdsPtr,
-    *movieFieldCmdsPtr, *clientFieldCmdsPtr,
-    *movieSortByCmdsPtr, *clientSortByCmdsPtr;
-extern string *genrePtr,
-    *movieFieldCmdsStrPtr, *clientFieldCmdsStrPtr, *movieSortByCmdsStrPtr, *clientSortByCmdsStrPtr;
+extern bool movieValidFieldsToFilter[], clientValidFieldsToFilter[];
+extern char *movieFieldCmdsStr[], *clientFieldCmdsStr[], *genreStr[];
+extern int cmdsChar[], subCmdsChar[], movieFieldCmdsChar[], clientFieldCmdsChar[];
 
 #ifndef DATA_H
 #define DATA_H
+
+// --- Functions
+int isCharOnArray(int character, int array[], int n);
+void addMovie(Movies *movies);
+void rentMovie(Movies *movies, Clients *clients);
+void getMovieStatus(Movies *movies);
+void viewMovies(Movies *movies, bool fields[], int sortBy[]);
+void filterMovies(Movies *movies, string **params, int sortBy[]);
+void viewClients(Clients *clients, bool fields[], int sortBy[]);
+void searchClient(Clients *clients, string **params, int sortBy[]);
+void movieFields(); // As a Parameter or as a Subcommand
+void sortByParameters();
+void clientParameters();
+void validGenres();
+void howToUseViewMovies();
+void howToUseFilterMovies();
+void howToUseSearchClient();
+void addClient(Clients *clients);
 
 // --- Templates
 
@@ -31,26 +46,10 @@ string addBrackets(T message)
   else
     addedBrackets = message; // Message is of type String´
 
+  assert(addedBrackets.length() > 0); // Check if the Character Could be Appended to the String
   addedBrackets.insert(0, 1, '[');
 
   return addedBrackets.insert(addedBrackets.length(), 1, ']');
 }
-
-// --- Functions
-int isCharOnArray(int character, int array[], int n);
-void addMovie(Movie movies[], int *nMoviesRead);
-void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsRead);
-void getMovieStatus(Movie movies[], int nMoviesRead);
-void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[]);
-void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], int sortBy[]);
-void searchClient(Client clients[], int nClientsRead, string **params, int counter[], int sortBy[]);
-void movieFields(); // As a Parameter or as a Subcommand
-void sortByParameters();
-void clientParameters();
-void validGenres();
-void howToUseViewMovies();
-void howToUseFilterMovies();
-void howToUseSearchClient();
-void addClient(Client clients[], int *nClientsRead);
 
 #endif

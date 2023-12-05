@@ -20,13 +20,13 @@ using namespace terminal;
 
 // --- Function Prototypes
 int isCharOnArray(int character, int array[], int n);
-void addMovie(Movie movies[], int *nMoviesRead);
-void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsRead);
+void addMovie(Movies *movies);
+void rentMovie(Movies *movies, Clients *clients);
 void printMovieInfo(Movie movie);
-void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[]);
-void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], int sortBy[]);
-void getMovieStatus(Movie movies[], int nMoviesRead);
-void searchClient(Client clients[], int nClientsRead, string **params, int counter[], int sortBy[]);
+void viewMovies(Movies *movies, bool fields[], int sortBy[]);
+void filterMovies(Movies *movies, string **params, int counter[], int sortBy[]);
+void getMovieStatus(Movies *movies);
+void searchClient(Clients *clients, string **params, int counter[], int sortBy[]);
 void validParameters(int nCharTitle);
 void movieFields();
 void sortByParameters();
@@ -35,13 +35,13 @@ void validGenres();
 void howToUseViewMovies();
 void howToUseFilterMovies();
 void howToUseSearchClient();
-void addClient(Client clients[], int *nClientsRead);
+void addClient(Clients *clients);
 int getMovieSortByStr(int sortBy[], string sortByStr[], int n);
 int getClientSortByStr(int sortBy[], string sortByStr[], int n);
 
 // --- Functions
 
-// Function to check if the Character is on Char Array
+// Function to check if the Integer that Represents a Character is on Char Array
 int isCharOnArray(int character, int array[], int n)
 {
   for (int i = 0; i < n; i++)
@@ -51,7 +51,7 @@ int isCharOnArray(int character, int array[], int n)
 }
 
 // Function to Add Some Movies to movies.csv
-void addMovie(Movie movies[], int *nMoviesRead)
+void addMovie(Movies *movies)
 {
   while (true)
   {
@@ -68,16 +68,19 @@ void addMovie(Movie movies[], int *nMoviesRead)
 }
 
 // Function to Rent Movie
-void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsRead)
+void rentMovie(Movies *movies, Clients *clients)
 {
   Client client = Client();
-  int movieId, movieIndex, movieStatus, clientId, clientIndex, clientStatus;
+  int movieId, movieIndex, movieStatus, clientId, clientIndex, nMoviesRead = (*movies).getNumberMovies(), nClientsRead = (*clients).getNumberClients();
+  clientStatus clientStatus;
+  movieStatus movieStatus;
   string message, temp;
 
   cout << clear;
   printTitle("Rent Movie", applyBgColor, applyFgColor, false);
 
   cout << '\n';
+
   while (true) // Get Movie ID
     try
     {
@@ -91,7 +94,7 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
       wrongMovieData(invalidMovieId);
     }
 
-  movieStatus = checkMovieStatusById(movies, nMoviesRead, movieId, &movieIndex);
+  movieStatus = getMovieId(movies, nMoviesRead, movieId, &movieIndex);
 
   cout << '\n';
   if (movieStatus == movieNotFound)
@@ -171,7 +174,7 @@ void rentMovie(Movie movies[], int nMoviesRead, Client clients[], int *nClientsR
 }
 
 // Function to View Movies
-void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[])
+void viewMovies(Movies *movies, bool fields[], int sortBy[])
 {
   int m = movieFieldEnd - 1, n = movieSortByEnd / 2;
   string fieldsStr[m], sortByStr[n], applied;
@@ -204,7 +207,7 @@ void viewMovies(Movie movies[], int nMoviesRead, bool fields[], int sortBy[])
 }
 
 // Function to Filter Movies
-void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[], int sortBy[])
+void filterMovies(Movies *movies, string **params, int counter[], int sortBy[])
 {
   int l = movieFieldEnd - 1, m = maxParamPerSubCmd, n = movieSortByEnd / 2;
   bool fields[l];
@@ -228,7 +231,7 @@ void filterMovies(Movie movies[], int nMoviesRead, string **params, int counter[
 }
 
 // Function to Check Movie Rent Status
-void getMovieStatus(Movie movies[], int nMoviesRead)
+void getMovieStatus(Movies *movies)
 {
   int id, movieStatus, index;
   string temp, message;
@@ -266,8 +269,14 @@ void getMovieStatus(Movie movies[], int nMoviesRead)
   pressEnterToCont(message, false);
 }
 
+// Function to View Clients
+void viewClients(Clients *clients, , bool fields[], int sortBy[])
+{
+  cout << "to develop";
+}
+
 // Function to Filter Clients
-void searchClient(Client clients[], int nClientsRead, string **params, int counter[], int sortBy[])
+void searchClient(Clients *clients, string **params, int counter[], int sortBy[])
 {
   int l = clientFieldEnd, m = maxParamPerSubCmd, n = clientSortByEnd / 2, nClientsFiltered;
   bool fields[l];
@@ -443,7 +452,7 @@ void howToUseSearchClient()
 }
 
 // Function to Add Some Clients to clients.csv
-void addClient(Client clients[], int *nClientsRead)
+void addClient(Clients *clients)
 {
   while (true)
   {

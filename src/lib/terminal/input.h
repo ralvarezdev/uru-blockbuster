@@ -17,6 +17,8 @@ void wrongCommand(cmdStatus cmdStatus);
 void wrongMovieData(invalidMovie wrongData);
 void wrongClientData(invalidClient wrongData);
 void pressEnterToCont(string message, bool warning);
+int getInteger(string message, int low, int high);
+double getDouble(string message, double low, double high, int precision);
 string getLower(string word);
 
 #endif

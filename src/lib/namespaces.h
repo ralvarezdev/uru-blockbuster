@@ -75,9 +75,9 @@ namespace clients
   // - Client Structure
   struct Client
   {
-    int account;      // Client Account Number
+    int account;            // Client Account Number
     int id;                 // Client ID
-    int phoneNumber;        // Client Phone Number
+    double phoneNumber;     // Client Phone Number
     char name[nFieldChars]; // Client Name
   };
 
@@ -168,13 +168,20 @@ namespace clients
       switch (field)
       {
       case commands::clientFieldAccountNumber:
-        isI = (this->array[*i].accountNumber < this->array[*j].accountNumber);
+        isI = (this->array[*i].account < this->array[*j].account);
         break;
       case commands::clientFieldId:
         isI = (this->array[*i].id < this->array[*j].id);
         break;
       case commands::clientFieldName:
-        isI = (this->array[*i].name.compare(this->array[*j].name) < 0);
+        string clientName1 = this->array[*i].name;
+        string clientName2 = this->array[*j].name;
+
+        for (int n = 0; n < nFieldChars; n++)
+          if (n + 1 != nFieldChars && clientName1[n] == clientName2[n])
+            continue;
+          else
+            isI = clientName1[n] <= clientName2[n]; // To Make the Algorithm Stable
         break;
       case commands::clientFieldPhoneNumber:
         isI = (this->array[*i].phoneNumber < this->array[*j].phoneNumber);
@@ -196,8 +203,8 @@ namespace clients
     }
   };
 
-  const int nClients = 1000;                    // Max Number of Clients
   const string clientsFilename = "clients.bin"; // Clients Filename
+  const int precision = 2;                      // Precision for Floats and Doubles (Used on Client Phone Number)
   const int nFieldChars = 50;                   // Number of Characters for Each Field
 }
 
@@ -277,14 +284,14 @@ namespace movies
     { // Default Constructor
       this->capacity = 2;
       this->occupied = 0;
-      this->array = new Client[capacity];
+      this->array = new Movie[capacity];
     }
 
     Movies(int inputCapacity)
     { // Constructor with Capacity Given by the User
       this->capacity = inputCapacity;
       this->occupied = 0;
-      this->array = new Client[capacity];
+      this->array = new Movie[capacity];
     }
 
     int getCapacity() { return this->capacity; } // Return Array Capacity
@@ -317,7 +324,7 @@ namespace movies
     void insertAt(int index, Movie movie)
     { // Function to Insert Movie. If the Index hasn't been Occupied. The Movie will be Pushed Back
       if (index >= this->occupied)
-        pushBack(Movie);
+        this->pushBack(movie);
       else
         this->array[index] = movie; // Insert Movie at Given Index
     }
@@ -359,7 +366,7 @@ namespace movies
       case commands::movieFieldDirector:
         isI = (this->array[*i].director.compare(this->array[*j].director) < 0);
         break;
-      // case commands::movieFieldGenre:
+      // case commands::movieFieldGenre: // NOT DEFINED
       case commands::movieFieldDuration:
         isI = (this->array[*i].duration < this->array[*j].duration);
         break;
@@ -531,6 +538,13 @@ namespace commands
     int sub = 0;
     int field = 0;
     int param = 0;
+  };
+
+  // - Command Explanation
+  struct cmdExplanation
+  {
+    string cmd;
+    string explanation;
   };
 }
 

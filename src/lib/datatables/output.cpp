@@ -33,7 +33,7 @@ void printExamples(string cmds[], string explanations[], int n)
   const int nCharLine = nChar - tab1.length(); // Number of Characters for Each Line
 
   int printedChar, messageLength; // Number of Characters Printed in the Current Line and the Length of Message String
-  string message, lastIter;       // Temp Data
+  string message;                 // Temp Data
 
   cout << clear;                                             // Clear Terminal
   printTitle("Examples", applyBgColor, applyFgColor, false); // Examples of the Usage of the Search Command
@@ -41,9 +41,11 @@ void printExamples(string cmds[], string explanations[], int n)
   {
     printedChar = 0;
 
-    for (int j = 0; j < cmds[i].length(); j += nCharLine)
+    for (int j = 0; j < examples[i].cmd.length(); j += nCharLine)
     {
-      message = cmds[i].substr(j, nCharLine + j);
+      message = examples[i].cmd.substr(j, nCharLine + j);
+      assert(message.length() <= nCharLine); // Check message String Length
+
       cout << '\n'
            << tab1 << message << '\n';
     }
@@ -51,6 +53,7 @@ void printExamples(string cmds[], string explanations[], int n)
     cout << tab1 << string(nCharTitle, '-') << '\n';
 
     stringstream stream(explanations[i]); // To Print the Message with New Line each time it Reaches nCharLine
+    
     while (getline(stream, message, ' '))
     {
       messageLength = message.length();

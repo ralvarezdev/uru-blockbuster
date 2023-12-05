@@ -8,14 +8,23 @@ using namespace clients;
 #define CLIENTS_H
 
 // --- Functions
-clientStatus getClientId(Clients *clients, int *id, int *index, string message) void getClients(Clients *clients);
+clientStatus getClientId(Clients *clients, int *id, int *index, string message);
+void getClients(Clients *clients);
 void addClientToFile(Clients *clients);
-clientStatus checkClientStatusById(Clients *clients, int id, int *index);
 void createClientWithId(Clients *clients, Client newClient, int *index);
 void filterClients(Clients *clients, string **params, bool fields[], int sortBy[]);
 void sortClients(Clients *clients, int sortBy[], int n);
 
 // --- Templates
+
+// Template to Convert Float to String with a Set Precision of N Digits
+template <typename T>
+string toStringWithPrecision(T number, int precision)
+{
+  ostringstream stream;
+  stream << fixed << setprecision(precision) << number;
+  return stream.str();
+}
 
 // Function to Check if Client Unique Fields have been Ocuppied
 template <typename T>
