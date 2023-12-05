@@ -5,6 +5,9 @@ using namespace std;
 #ifndef NAMESPACES_H
 #define NAMESPACES_H
 
+// --- Function Prototypes
+bool getOlderDate(int date1[3], int date2[3]);
+
 namespace files
 {
   const char sep = ';', genreSep = '|', dateSep = '-'; // Separators
@@ -52,14 +55,11 @@ namespace terminal
 }
 
 namespace clients
-{                                               // Enums Should be at the Beginning
-  const int nClients = 1000;                    // Max Number of Clients
-  const string clientsFilename = "clients.bin"; // Clients Filename
-  const int nFieldChars = 50;                   // Number of Characters for Each Field
-
+{ // Enums Should be at the Beginning
   // - Invalid Client Data
   enum invalidClient
   {
+    invalidClientAccountNumber,
     invalidClientId,
     invalidClientPhoneNumber,
     clientExists
@@ -75,11 +75,130 @@ namespace clients
   // - Client Structure
   struct Client
   {
-    int id;                    // Client ID
-    int phoneNumber;           // Client Phone Number
-    char name[nFieldChars];    // Client Name
-    char address[nFieldChars]; // Client Address
+    int account;      // Client Account Number
+    int id;                 // Client ID
+    int phoneNumber;        // Client Phone Number
+    char name[nFieldChars]; // Client Name
   };
+
+  // Clients Dynamic Array Class
+  class Clients
+  {
+  private:
+    Client *array = NULL; // Initializes as Null Pointer
+    int capacity;
+    int occupied; // Number of Elements that have been Added to the Array
+
+  public:
+    Clients()
+    { // Default Constructor
+      this->capacity = 2;
+      this->occupied = 0;
+      this->array = new Client[capacity];
+    }
+
+    Clients(int inputCapacity)
+    { // Constructor with Capacity Given by the User
+      this->capacity = inputCapacity;
+      this->occupied = 0;
+      this->array = new Client[capacity];
+    }
+
+    int getCapacity() { return this->capacity; } // Return Array Capacity
+
+    int getNumberClients() { return this->occupied; } // Return Number of Clients Appended to the Array
+
+    Client getClient(int index) { return this->array[index]; } // Return Client Structure at the Given Index
+
+    void pushBack(Client newClient)
+    {
+      if (this->occupied == this->capacity)
+        increaseArrayCapacity(); // Double the Capacity of the Array
+
+      this->array[this->occupied] = newClient;
+      this->occupied++;
+    }
+
+    void increaseArrayCapacity() // Function to Double the Array Capacity
+    {
+      Client *temp = new Client[2 * this->capacity];
+      for (int i = 0; i < this->occupied; i++)
+        temp[i] = this->array[i]; // Copy Pointer to Client Structures
+
+      delete[] this->array; // Delete Old Array
+
+      this->array = temp; // Assign New Array
+      this->capacity *= 2;
+    }
+
+    void insertAt(int index, Client client)
+    { // Function to Insert Client. If the Index hasn't been Occupied. The Client will be Pushed Back
+      if (index >= this->occupied)
+        pushBack(client);
+      else
+        this->array[index] = client; // Insert Client at Given Index
+    }
+
+    void deleteAt(int index) // Function to Delete Client at Given Index
+    {
+      for (int i = index; i < this->occupied; i++)
+        this->array[i] = this->array[i + 1]; // Move Clients
+
+      this->occupied--; // Reduce Occupied Variable
+    }
+
+    void reverse() // Function to Swap the Order of the Array
+    {
+      int j = 0, n = this->getNumberClients();
+      Client temp;
+
+      for (int i = n - 1; i > (n - 1) / 2; i-- && j++)
+      {
+        temp = this->array[j];
+
+        this->array[j] = this->array[i];
+        this->array[i] = temp;
+      }
+    }
+
+    Client compare(int *i, int *j, cmdClientFields field, int increaseIndexBy = 0) // Function to Compare Client Fields
+    {
+      bool isI = false;
+
+      switch (field)
+      {
+      case commands::clientFieldAccountNumber:
+        isI = (this->array[*i].accountNumber < this->array[*j].accountNumber);
+        break;
+      case commands::clientFieldId:
+        isI = (this->array[*i].id < this->array[*j].id);
+        break;
+      case commands::clientFieldName:
+        isI = (this->array[*i].name.compare(this->array[*j].name) < 0);
+        break;
+      case commands::clientFieldPhoneNumber:
+        isI = (this->array[*i].phoneNumber < this->array[*j].phoneNumber);
+        break;
+      }
+
+      if (increaseIndexBy != 0)
+        if (isI)
+          *i += 1;
+        else
+          *j += 1;
+
+      return (isI) ? this->array[*i - 1] : this->array[*j - 1];
+    }
+
+    void deallocate() // Function to Deallocate Memory
+    {
+      delete[] this->array;
+    }
+  };
+
+  const int nClients = 1000;                    // Max Number of Clients
+  const string clientsFilename = "clients.bin"; // Clients Filename
+  const int nFieldChars = 50;                   // Number of Characters for Each Field
 }
 
 namespace movies
@@ -130,10 +249,6 @@ namespace movies
     movieNotRented,
   };
 
-  const int nMovies = 10000;                  // Max Number of Movies
-  const int nMaxGenres = 5;                   // Max Number of Genres Per Movie
-  const string moviesFilename = "movies.csv"; // Movies Filename
-
   // - Movie Structure
   struct Movie
   {
@@ -148,6 +263,140 @@ namespace movies
     int rentOn[3];        // Rent Date
     bool rentStatus;      // Rent Status
   };
+
+  // Movies Dynamic Array Class
+  class Movies
+  {
+  private:
+    Movie *array = NULL; // Initializes as Null Pointer
+    int capacity;
+    int occupied; // Number of Elements that have been Added to the Array
+
+  public:
+    Movies()
+    { // Default Constructor
+      this->capacity = 2;
+      this->occupied = 0;
+      this->array = new Client[capacity];
+    }
+
+    Movies(int inputCapacity)
+    { // Constructor with Capacity Given by the User
+      this->capacity = inputCapacity;
+      this->occupied = 0;
+      this->array = new Client[capacity];
+    }
+
+    int getCapacity() { return this->capacity; } // Return Array Capacity
+
+    int getNumberMovies() { return this->occupied; } // Return Number of Movies Appended to the Array
+
+    Movie getMovie(int index) { return this->array[index]; } // Return Movie Structure at the Given Index
+
+    void pushBack(Movie newMovie)
+    {
+      if (this->occupied == this->capacity)
+        increaseArrayCapacity(); // Double the Capacity of the Array
+
+      this->array[this->occupied] = newMovie;
+      this->occupied++;
+    }
+
+    void increaseArrayCapacity() // Function to Double the Array Capacity
+    {
+      Movie *temp = new Movie[2 * this->capacity];
+      for (int i = 0; i < this->occupied; i++)
+        temp[i] = this->array[i]; // Copy Pointer to Movie Structures
+
+      delete[] this->array; // Delete Old Array
+
+      this->array = temp; // Assign New Array
+      this->capacity *= 2;
+    }
+
+    void insertAt(int index, Movie movie)
+    { // Function to Insert Movie. If the Index hasn't been Occupied. The Movie will be Pushed Back
+      if (index >= this->occupied)
+        pushBack(Movie);
+      else
+        this->array[index] = movie; // Insert Movie at Given Index
+    }
+
+    void deleteAt(int index) // Function to Delete Movie at Given Index
+    {
+      for (int i = index; i < this->occupied; i++)
+        this->array[i] = this->array[i + 1]; // Move Movies
+
+      this->occupied--; // Reduce Occupied Variable
+    }
+
+    void reverse() // Function to Swap the Order of the Array
+    {
+      int j = 0, n = this->getNumberMovies();
+      Movie temp;
+
+      for (int i = n - 1; i > (n - 1) / 2; i-- && j++)
+      {
+        temp = this->array[j];
+
+        this->array[j] = this->array[i];
+        this->array[i] = temp;
+      }
+    }
+
+    Movie compare(int *i, int *j, cmdMovieFields field, int increaseIndexBy = 0) // Function to Compare Movie Fields
+    {
+      bool isI = false;
+
+      switch (field)
+      {
+      case commands::movieFieldId:
+        isI = (this->array[*i].id < this->array[*j].id);
+        break;
+      case commands::movieFieldName:
+        isI = (this->array[*i].name.compare(this->array[*j].name) < 0);
+        break;
+      case commands::movieFieldDirector:
+        isI = (this->array[*i].director.compare(this->array[*j].director) < 0);
+        break;
+      // case commands::movieFieldGenre:
+      case commands::movieFieldDuration:
+        isI = (this->array[*i].duration < this->array[*j].duration);
+        break;
+      case commands::movieFieldPrice:
+        isI = (this->array[*i].price < this->array[*j].price);
+        break;
+      case commands::movieFieldRelease:
+        isI = getOlderDate(this->array[*i].releaseDate, this->array[*j].releaseDate);
+        break;
+      case commands::movieFieldStatus:
+        isI = (this->array[*i].rentStatus < this->array[*j].rentStatus);
+        break;
+      case commands::movieFieldRentOn:
+        isI = getOlderDate(this->array[*i].rentOn, this->array[*j].rentOn);
+        break;
+      case commands::movieFieldRentTo:
+        isI = (this->array[*i].rentTo < this->array[*j].rentTo);
+        break;
+      }
+
+      if (increaseIndexBy != 0)
+        if (isI)
+          *i += 1;
+        else
+          *j += 1;
+
+      return (isI) ? this->array[*i - 1] : this->array[*j - 1];
+    }
+
+    void deallocate() // Function to Deallocate Memory
+    {
+      delete[] this->array;
+    }
+  };
+
+  const int nMaxGenres = 5;                   // Max Number of Genres Per Movie
+  const string moviesFilename = "movies.csv"; // Movies Filename
 }
 
 namespace commands
@@ -160,7 +409,8 @@ namespace commands
     cmdMovieStatus,
     cmdViewMovies,
     cmdFilterMovies,
-    cmdSearchClient,
+    cmdViewClients,
+    cmdSearchClients,
     cmdMovieParameters,
     cmdSortByParameters,
     cmdClientParameters,
@@ -205,41 +455,12 @@ namespace commands
   // - Client Fields
   enum cmdClientFields
   {
+    clientFieldAccountNumber,
     clientFieldId,
     clientFieldName,
     clientFieldPhoneNumber,
-    clientFieldAddress,
+    clientFieldAll,
     clientFieldEnd // To get the number of Fields. SHOULD BE AT THE END
-  };
-
-  // - Sort By Movie Commands
-  // A: Ascending
-  // D: Descending
-  enum sortByMovieCmds
-  {
-    movieSortByDurationA,
-    movieSortByDurationD,
-    movieSortByIdA,
-    movieSortByIdD,
-    movieSortByPriceA,
-    movieSortByPriceD,
-    movieSortByReleaseA,
-    movieSortByReleaseD,
-    movieSortByRentToA,
-    movieSortByRentToB,
-    movieSortByTitleA,
-    movieSortByTitleB,
-    movieSortByEnd // To get the number of Sort By Commands. SHOULD BE AT THE END
-  };
-
-  // - Sort By Client Commands
-  enum sortByClientCmds
-  {
-    clientSortByIdA,
-    clientSortByIdD,
-    clientSortByNameA,
-    clientSortByNameB,
-    clientSortByEnd // To get the number of Sort By Commands. SHOULD BE AT THE END
   };
 
   // - Command Status if it's Valid or not
@@ -251,7 +472,8 @@ namespace commands
     wrongSubCmd,
     wrongViewMoviesCmd,
     wrongFilterMoviesCmd,
-    wrongSearchClientCmd,
+    wrongViewClientsCmd,
+    wrongSearchClientsCmd,
     wrongMovieField,
     wrongMovieFieldParam,
     wrongClientFieldParam,
@@ -264,8 +486,8 @@ namespace commands
   // - View Movies Command Parameters Structure
   struct ViewMoviesCmd
   {
-    bool params[movieFieldEnd];     // 1D Array to Save the Fields to Show in View Movies
-    int sortBy[movieSortByEnd / 2]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    bool params[movieFieldEnd];    // 1D Array to Save the Fields to Show in View Movies
+    int sortBy[movieFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - Filter Movies Command Parameters Structure
@@ -274,16 +496,23 @@ namespace commands
     string params[movieFieldEnd][maxParamPerSubCmd]; // 2D String Array of Field Parameters
     string *paramsPtr[movieFieldEnd];                // 1D Pointer Array to to the 2D Array
     int counter[movieFieldEnd];                      // Filter Movies Field Parameters Counter
-    int sortBy[movieSortByEnd / 2];                  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    int sortBy[movieFieldEnd - 1];                   // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
-  // - Search Client Command Parameters Structure
-  struct SearchClientCmd
+  // - View Clients Command Parameters Structure
+  struct ViewClientsCmd
+  {
+    bool params[clientFieldEnd];    // 1D Array to Save the Fields to Show in View Clients
+    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+  };
+
+  // - Search Clients Command Parameters Structure
+  struct SearchClientsCmd
   {
     string params[clientFieldEnd][maxParamPerSubCmd]; // 2D String Array of Clients Parameters
     string *paramsPtr[clientFieldEnd];                // 1D Pointer Array to to the 2D Array
     int counter[clientFieldEnd];
-    int sortBy[clientSortByEnd / 2]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - Command Structure

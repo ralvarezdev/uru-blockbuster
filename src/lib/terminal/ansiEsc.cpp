@@ -1,5 +1,6 @@
 #include <iomanip>
 #include <iostream>
+#include <string>
 
 #include "../namespaces.h"
 

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <assert.h>
 
 #include "ansiEsc.h"
 #include "../namespaces.h"
@@ -53,7 +54,10 @@ bool booleanQuestion(string message)
       return false;
     }
     else
+    {
+      assert(c != 'y' && c != 'n'); // c Must be Different from Y or N
       wrongCommand(wrongBooleanAnswer);
+    }
   }
 }
 
@@ -78,7 +82,8 @@ void wrongCommand(cmdStatus cmdStatus)
     break;
   case wrongViewMoviesCmd:
   case wrongFilterMoviesCmd:
-  case wrongSearchClientCmd:
+  case wrongViewClientsCmd: // TO ADD MESSAGE
+  case wrongSearchClientsCmd:
   case wrongSortByParam:
   case wrongMovieFieldParam:
   case wrongMovieField:
@@ -129,6 +134,9 @@ void wrongClientData(invalidClient wrongData)
 
   switch (wrongData)
   {
+  case invalidClientAccountNumber:
+    message.append("Account Number");
+    break;
   case invalidClientId:
     message.append("ID");
     break;
