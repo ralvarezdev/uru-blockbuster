@@ -1,16 +1,14 @@
 #include <string>
 #include <typeinfo>
 
+// #define NDEBUG
+#include <assert.h>
+
 #include "../namespaces.h"
 
 using namespace std;
 using namespace clients;
 using namespace movies;
-
-// --- Extern Variables Declaration
-extern bool movieValidFieldsToFilter[], clientValidFieldsToFilter[];
-extern char *movieFieldCmdsStr[], *clientFieldCmdsStr[], *genreStr[];
-extern int cmdsChar[], subCmdsChar[], movieFieldCmdsChar[], clientFieldCmdsChar[];
 
 #ifndef DATA_H
 #define DATA_H
@@ -23,14 +21,15 @@ void getMovieStatus(Movies *movies);
 void viewMovies(Movies *movies, bool fields[], int sortBy[]);
 void filterMovies(Movies *movies, string **params, int sortBy[]);
 void viewClients(Clients *clients, bool fields[], int sortBy[]);
-void searchClient(Clients *clients, string **params, int sortBy[]);
-void movieFields(); // As a Parameter or as a Subcommand
+void searchClients(Clients *clients, string **params, int sortBy[]);
+void movieFields();  // As a Parameter or as a Subcommand
+void clientFields(); // As a Parameter or as a Subcommand
 void sortByParameters();
-void clientParameters();
 void validGenres();
 void howToUseViewMovies();
 void howToUseFilterMovies();
-void howToUseSearchClient();
+void howToUseViewClients();
+void howToUseSearchClients();
 void addClient(Clients *clients);
 
 // --- Templates

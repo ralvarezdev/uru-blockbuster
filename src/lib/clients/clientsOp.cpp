@@ -21,12 +21,11 @@ using namespace terminal;
 extern bool clientValidFieldsToFilter[];
 
 // --- Function Prototypes
-clientStatus
-getClientId(Clients *clients, int *id, int *index, string message);
+clientStatus getClientId(Clients *clients, int *id, int *index, string message);
 void getClients(Clients *clients);
 void addClientToFile(Clients *clients);
 void createClientWithId(Clients *clients, Client newClient, int *index);
-void filterClients(Clients *clients, string **params, bool fields[], int sortBy[]);
+void filterClientsData(Clients *clients, string **params, bool fields[], int sortBy[]);
 void sortClients(Clients *clients, int sortBy[], int n);
 void clientsMergeSort(Clients *client, int sortByIndex);
 void clientsMerge(Clients *clients, Client sorted[], int low, int mid, int high, int sortByIndex);
@@ -76,12 +75,14 @@ void addClientToFile(Clients *clients)
 
   if (check != clientNotFound) // The Id has been Added to that File
   {
-    assert(id > 0 && index == -1); // Check Client Id and Index
+    assert(id > 0 && index >= 0); // Check Client Id and Index
     wrongClientData(clientExists);
     return; // End this Function
   }
 
-  assert(id > 0 && index >= 0); // Check Client Id and Index
+  assert(id > 0 && index == -1); // Check Client Id and Index
+  newClient.id = id;             // Assign Client ID
+
   createClientWithId(clients, newClient, &index);
 }
 
@@ -96,14 +97,19 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
   for (int i = 0; i < nFieldChars && i < temp.length(); i++)
     newClient.name[i] = temp[i];
 
-  newClient.phoneNumber = getDouble("Phone Number: ", 0, 100000000000, 0); // Get Client Phone Number
+  newClient.phoneNumber = getDouble("Phone Number", 0, maxPhoneNumber, 0); // Get Client Phone Number
 
-  // Get Client Account Number
-  newClient.account = (*clients).getClient(nClients - 1).account + 1; // Previously, Sorted by Id in Ascending Order (in getClientId Function)
+  // Get Client Account Number. Previously, Sorted by Id in Ascending Order (in getClientId Function)
+  if (nClients > 0)
+    newClient.account = (*clients).getClient(nClients - 1).account + 1;
+  else
+    newClient.account = 0;
 
   (*clients).pushBack(newClient);
 
   ofstream outfile(clientsFilename, ios::app | ios::binary); // Write to File
+
+  cout << newClient.account << ' ' << newClient.id << ' ' << newClient.name << ' ' << newClient.phoneNumber;
 
   outfile.write((char *)&newClient, sizeof(Client));
 
@@ -112,21 +118,21 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
 }
 
 // Function that Returns Clients Indexes that Matched with the Parameters
-void filterClients(Clients *clients, string **params, bool fields[], int sortBy[])
+void filterClientsData(Clients *clients, string **params, bool fields[], int sortBy[])
 {
   clientStatus clientStatus;
   double phoneNumber;
   int i, id, account, index = 0, counter = 0, nClientsRead = (*clients).getNumberClients();
   string nameLower;
 
-  assert(nClientsRead > 0); // Check if the Number of Clients is Greater than 0
+  assert(nClientsRead >= 0); // Check if the Number of Clients is Greater or Equal to 0
 
   bool *filteredIndexes = new bool[nClientsRead];               // Allocate Memory
   fill(filteredIndexes, filteredIndexes + nClientsRead, false); // Fill Array with False Values
 
   for (int field = 0; field < clientFieldEnd - 1; field++)
   {
-    if (clientValidFieldsToFilter[field] == 0 && params[field][0] == "null") // Check if the Function can Filter that Field, and if there are Parameters
+    if (!clientValidFieldsToFilter[field]) // Check if the Function can Filter that Field, and if there are Parameters
       continue;
 
     for (int param = 0; param < maxParamPerSubCmd && params[field][param] != "null"; param++)

@@ -1,4 +1,8 @@
 #include <iostream>
+#include <iomanip>
+#include <sstream>
+
+// #define NDEBUG
 #include <assert.h>
 
 #include "ansiEsc.h"
@@ -89,8 +93,9 @@ void wrongCommand(cmdStatus cmdStatus)
   case wrongSortByParam:
   case wrongMovieFieldParam:
   case wrongMovieField:
+  case wrongClientField: // TO ADD MESSAGE
   case wrongClientFieldParam:
-    if (cmdStatus == wrongFilterMoviesCmd || cmdStatus == wrongViewMoviesCmd || cmdStatus == wrongSearchClientCmd)
+    if (cmdStatus == wrongFilterMoviesCmd || cmdStatus == wrongViewMoviesCmd || cmdStatus == wrongSearchClientsCmd)
       message.append("Wrong Command");
     else if (cmdStatus == wrongSortByParam || cmdStatus == wrongMovieFieldParam || cmdStatus == wrongMovieField || wrongClientFieldParam)
       message.append((cmdStatus == wrongSortByParam) ? "Wrong Sort By Parameter" : "Wrong Field");
@@ -171,7 +176,7 @@ int getInteger(string message, int low, int high)
   while (true)
     try // Get Integer
     {
-      cout << message << " : ";
+      cout << message << ": ";
       getline(cin, temp);
       amount = stoi(temp);
 
@@ -199,7 +204,7 @@ double getDouble(string message, double low, double high, int precision)
   while (true)
     try // Get Double
     {
-      cout << message << " : ";
+      cout << message << ": ";
       getline(cin, temp);
       amount = stod(temp);
 

@@ -1,8 +1,10 @@
 #include <assert.h>
 
 #include "../namespaces.h"
+#include "../terminal/input.h"
 
 using namespace clients;
+using namespace commands;
 
 #ifndef CLIENTS_H
 #define CLIENTS_H
@@ -12,28 +14,21 @@ clientStatus getClientId(Clients *clients, int *id, int *index, string message);
 void getClients(Clients *clients);
 void addClientToFile(Clients *clients);
 void createClientWithId(Clients *clients, Client newClient, int *index);
-void filterClients(Clients *clients, string **params, bool fields[], int sortBy[]);
+void filterClientsData(Clients *clients, string **params, bool fields[], int sortBy[]);
 void sortClients(Clients *clients, int sortBy[], int n);
-
-// --- Templates
-
-// Template to Convert Float to String with a Set Precision of N Digits
-template <typename T>
-string toStringWithPrecision(T number, int precision)
-{
-  ostringstream stream;
-  stream << fixed << setprecision(precision) << number;
-  return stream.str();
-}
+void clientsMergeSort(Clients *clients, int sortByIndex);
 
 // Function to Check if Client Unique Fields have been Ocuppied
 template <typename T>
 clientStatus checkClient(Clients *clients, T unique, cmdClientFields field, int *index)
 {
   if (field != clientFieldId && field != clientFieldAccountNumber)
-    return errorStatus;
+    return clientErrorStatus;
   else
     clientsMergeSort(clients, field * 2); // Sort Clients by Id or by Account Number
+
+  if ((*clients).getNumberClients() == 0)
+    return clientNotFound;
 
   Client client;
 
@@ -42,7 +37,7 @@ clientStatus checkClient(Clients *clients, T unique, cmdClientFields field, int 
   int mid, start = 0, end = (*clients).getNumberClients() - 1;
   string line;
 
-  assert(end > start); // Check if the Last Index of the Array is Greater than the First One
+  assert(end >= start); // Check if the Last Index of the Array is Greater than the First One
 
   while (start <= end)
   { // Binary Search

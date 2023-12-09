@@ -32,7 +32,7 @@ void getGenres(string word, int genres[], int n);
 int getGenreIndex(string genre);
 int getGenreIndexLower(string genre);
 void getDate(string word, int date[], int n);
-void filterMovies(Movies *movies, string **params, bool fields[], int sortBy[]);
+void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy[]);
 void addFilteredMovie(int filteredIds[], int nMoviesRead, int id, int *counter);
 int binarySearch(int A[], int n, int num);
 void insertionSortWithPivot(int A[], int n, int pivot);
@@ -183,7 +183,7 @@ void getDate(string word, int date[], int n)
 }
 
 // Function that Returns Movie Indexes that Matched with the Parameters
-void filterMovies(Movies *movies, string **params, bool fields[], int sortBy[])
+void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy[])
 {
   movieStatus movieStatus;
   Movie movie;
@@ -197,7 +197,7 @@ void filterMovies(Movies *movies, string **params, bool fields[], int sortBy[])
 
   for (int field = 0; field < movieFieldEnd - 1; field++)
   {
-    if (movieValidFieldsToFilter[field] && params[field][0] == "null") // Check if the Function can Filter that Field, and if there are Parameters
+    if (!movieValidFieldsToFilter[field]) // Check if the Function can Filter that Field
       continue;
 
     for (int param = 0; param < maxParamPerSubCmd && params[field][param] != "null"; param++)
@@ -384,13 +384,17 @@ void addMovieToFile(Movies *movies)
 
   string release;
 
-  check = getMovieId(movies, &id, &index, "ID: "); // Get Movie ID
+  check = getMovieId(movies, &id, &index, "ID"); // Get Movie ID
 
   if (check != movieNotFound)
   { // The Id has been Added to that File
     wrongMovieData(movieExists);
-    return; // End this Function
+    assert(id > 0 && index >= 0); // Check Client Id and Index
+    return;                       // End this Function
   }
+
+  assert(id > 0 && index == -1); // Check Client Id and Index
+  newMovie.id = id;              // Assign Movie ID
 
   cout << "Title: "; // Get Movie Title
   getline(cin, newMovie.name);
@@ -424,13 +428,13 @@ void addMovieToFile(Movies *movies)
       wrongMovieData(invalidMovieGenre);
     }
 
-  newMovie.duration = getInteger("Movie Duration: ", 0, 500); // Get Movie Duration
+  newMovie.duration = getInteger("Movie Duration", 0, 500); // Get Movie Duration
 
   cout << "Enter Name of Director: ";
   getline(cin, temp);
   newMovie.director = temp;
 
-  newMovie.price = getInteger("Movie Price: ", 0, 1000); // Get Movie Price
+  newMovie.price = getInteger("Movie Price", 0, 1000); // Get Movie Price
 
   while (true) // Get Release Date
   {

@@ -43,6 +43,7 @@ namespace terminal
   const int paramPerLine = 3;                                 // Number of Parameters Printed by Line
   const int maxSpacing = 4;                                   // If the Maximum Number Characters is Reached this is the Spacing between Paratemeters
   const int nCharField = 15;                                  // Number of Characters for Field Title
+  const int nFieldChars = 50;                                 // Number of Characters for Each Field
   const int nCharTitle = 30;                                  // Number of Characters of the Parameter Title Printed
   const int nCharParam = (nChar - nCharTitle) / paramPerLine; // Number of Maximum Characters per Parameter
 
@@ -52,6 +53,150 @@ namespace terminal
   const int nDay = 2;
   const int nSep = 1;                                 // Separator Number of Characters after Dates
   const int nDate = nYear + nMonth + nDay + 2 + nSep; // Number of Characters for Release Date and Rent On
+}
+
+namespace commands
+{ // Enums Should be at the Beginning
+  // - Main Commands
+  enum cmds
+  {
+    cmdAddMovie,
+    cmdRentMovie,
+    cmdMovieStatus,
+    cmdViewMovies,
+    cmdFilterMovies,
+    cmdViewClients,
+    cmdSearchClients,
+    cmdMovieParameters,
+    cmdClientParameters,
+    cmdSortByParameters,
+    cmdGenres,
+    cmdHowToUseViewMovies,
+    cmdHowToUseFilterMovies,
+    cmdHowToUseViewClients,
+    cmdHowToUseSearchClients,
+    cmdAddClient,
+    cmdHelp,
+    cmdExit,
+    cmdEnd // To get the number of Commands. SHOULD BE AT THE END
+  };
+
+  // - Subcommands
+  enum subCmds
+  {
+    subCmdField,
+    subCmdSortBy,
+    subCmdEnd // To get the number of Subcommands. SHOULD BE AT THE END
+  };
+
+  // - Movie Fields
+  // Used to Select which Fields to Print in View Movies Command
+  // or Used to Specify where to Filter the Parameter from, if it's
+  // Typed Right After the Field
+  enum cmdMovieFields
+  {
+    movieFieldId,
+    movieFieldName,
+    movieFieldDirector,
+    movieFieldGenre,
+    movieFieldDuration,
+    movieFieldPrice,
+    movieFieldRelease,
+    movieFieldStatus,
+    movieFieldRentOn,
+    movieFieldRentTo,
+    movieFieldAll,
+    movieFieldEnd // To get the number of Fields. SHOULD BE AT THE END
+  };
+
+  // - Client Fields
+  enum cmdClientFields
+  {
+    clientFieldAccountNumber,
+    clientFieldId,
+    clientFieldName,
+    clientFieldPhoneNumber,
+    clientFieldAll,
+    clientFieldEnd // To get the number of Fields. SHOULD BE AT THE END
+  };
+
+  // - Command Status if it's Valid or not
+  enum cmdStatus
+  {
+    validCmd,
+    noCmd,
+    wrongMainCmd,
+    wrongSubCmd,
+    wrongViewMoviesCmd,
+    wrongFilterMoviesCmd,
+    wrongViewClientsCmd,
+    wrongSearchClientsCmd,
+    wrongMovieField,
+    wrongMovieFieldParam,
+    wrongClientField,
+    wrongClientFieldParam,
+    wrongSortByParam,
+    wrongBooleanAnswer
+  };
+
+  const int maxParamPerSubCmd = 6; // Max Number of Parameters per Subcommand
+
+  // - View Movies Command Parameters Structure
+  struct ViewMoviesCmd
+  {
+    bool params[movieFieldEnd - 1]; // 1D Array to Save the Fields to Show in View Movies
+    int sortBy[movieFieldEnd - 1];  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+  };
+
+  // - Filter Movies Command Parameters Structure
+  struct FilterMoviesCmd
+  {
+    string params[movieFieldEnd - 1][maxParamPerSubCmd]; // 2D String Array of Field Parameters
+    string *paramsPtr[movieFieldEnd - 1];                // 1D Pointer Array to to the 2D Array
+    int counter[movieFieldEnd - 1];                      // Filter Movies Field Parameters Counter
+    int sortBy[movieFieldEnd - 1];                       // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+  };
+
+  // - View Clients Command Parameters Structure
+  struct ViewClientsCmd
+  {
+    bool params[clientFieldEnd - 1]; // 1D Array to Save the Fields to Show in View Clients
+    int sortBy[clientFieldEnd - 1];  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+  };
+
+  // - Search Clients Command Parameters Structure
+  struct SearchClientsCmd
+  {
+    string params[clientFieldEnd - 1][maxParamPerSubCmd]; // 2D String Array of Clients Parameters
+    string *paramsPtr[clientFieldEnd - 1];                // 1D Pointer Array to to the 2D Array
+    int counter[clientFieldEnd - 1];
+    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+  };
+
+  // - Command Structure
+  struct Cmd
+  { // Command, SubCommand, Field, Parameter
+    int main;
+    int sub;
+    int field;
+    int param;
+  };
+
+  // - Command Indexes Structure
+  struct CmdIndex
+  { // Used to Save the Index of the Command on its Corresponding Array
+    int main = 0;
+    int sub = 0;
+    int field = 0;
+    int param = 0;
+  };
+
+  // - Command Explanation
+  struct cmdExplanation
+  {
+    string cmd;
+    string explanation;
+  };
 }
 
 namespace clients
@@ -69,16 +214,17 @@ namespace clients
   enum clientStatus
   {
     clientFound,
-    clientNotFound
+    clientNotFound,
+    clientErrorStatus
   };
 
   // - Client Structure
   struct Client
   {
-    int account;            // Client Account Number
-    int id;                 // Client ID
-    double phoneNumber;     // Client Phone Number
-    char name[nFieldChars]; // Client Name
+    int account;                      // Client Account Number
+    int id;                           // Client ID
+    double phoneNumber;               // Client Phone Number
+    char name[terminal::nFieldChars]; // Client Name
   };
 
   // Clients Dynamic Array Class
@@ -161,8 +307,9 @@ namespace clients
       }
     }
 
-    Client compare(int *i, int *j, cmdClientFields field, int increaseIndexBy = 0) // Function to Compare Client Fields
+    Client compare(int *i, int *j, commands::cmdClientFields field, int increaseIndexBy = 0) // Function to Compare Client Fields
     {
+      string clientName1, clientName2;
       bool isI = false;
 
       switch (field)
@@ -174,11 +321,11 @@ namespace clients
         isI = (this->array[*i].id < this->array[*j].id);
         break;
       case commands::clientFieldName:
-        string clientName1 = this->array[*i].name;
-        string clientName2 = this->array[*j].name;
+        clientName1 = this->array[*i].name;
+        clientName2 = this->array[*j].name;
 
-        for (int n = 0; n < nFieldChars; n++)
-          if (n + 1 != nFieldChars && clientName1[n] == clientName2[n])
+        for (int n = 0; n < terminal::nFieldChars; n++)
+          if (n + 1 != terminal::nFieldChars && clientName1[n] == clientName2[n])
             continue;
           else
             isI = clientName1[n] <= clientName2[n]; // To Make the Algorithm Stable
@@ -205,7 +352,7 @@ namespace clients
 
   const string clientsFilename = "clients.bin"; // Clients Filename
   const int precision = 2;                      // Precision for Floats and Doubles (Used on Client Phone Number)
-  const int nFieldChars = 50;                   // Number of Characters for Each Field
+  const double maxPhoneNumber = 100000000000;   // Max Phone Number
 }
 
 namespace movies
@@ -254,6 +401,7 @@ namespace movies
     movieNotFound,
     movieRented,
     movieNotRented,
+    movieErrorStatus
   };
 
   // - Movie Structure
@@ -299,6 +447,12 @@ namespace movies
     int getNumberMovies() { return this->occupied; } // Return Number of Movies Appended to the Array
 
     Movie getMovie(int index) { return this->array[index]; } // Return Movie Structure at the Given Index
+
+    void rentMovie(int clientId, int movieIndex)
+    {
+      this->array[movieIndex].rentTo = clientId; // Change Movie Rent To Field
+      this->array[movieIndex].rentStatus = true; // Change Movie Rent Status Field
+    }
 
     void pushBack(Movie newMovie)
     {
@@ -351,7 +505,7 @@ namespace movies
       }
     }
 
-    Movie compare(int *i, int *j, cmdMovieFields field, int increaseIndexBy = 0) // Function to Compare Movie Fields
+    Movie compare(int *i, int *j, commands::cmdMovieFields field, int increaseIndexBy = 0) // Function to Compare Movie Fields
     {
       bool isI = false;
 
@@ -404,148 +558,6 @@ namespace movies
 
   const int nMaxGenres = 5;                   // Max Number of Genres Per Movie
   const string moviesFilename = "movies.csv"; // Movies Filename
-}
-
-namespace commands
-{ // Enums Should be at the Beginning
-  // - Main Commands
-  enum cmds
-  {
-    cmdAddMovie,
-    cmdRentMovie,
-    cmdMovieStatus,
-    cmdViewMovies,
-    cmdFilterMovies,
-    cmdViewClients,
-    cmdSearchClients,
-    cmdMovieParameters,
-    cmdSortByParameters,
-    cmdClientParameters,
-    cmdGenres,
-    cmdHowToUseViewMovies,
-    cmdHowToUseFilterMovies,
-    cmdHowToUseSearchClient,
-    cmdAddClient,
-    cmdHelp,
-    cmdExit,
-    cmdEnd // To get the number of Commands. SHOULD BE AT THE END
-  };
-
-  // - Subcommands
-  enum subCmds
-  {
-    subCmdField,
-    subCmdSortBy,
-    subCmdEnd // To get the number of Subcommands. SHOULD BE AT THE END
-  };
-
-  // - Movie Fields
-  // Used to Select which Fields to Print in View Movies Command
-  // or Used to Specify where to Filter the Parameter from, if it's
-  // Typed Right After the Field
-  enum cmdMovieFields
-  {
-    movieFieldId,
-    movieFieldName,
-    movieFieldDirector,
-    movieFieldGenre,
-    movieFieldDuration,
-    movieFieldPrice,
-    movieFieldRelease,
-    movieFieldStatus,
-    movieFieldRentOn,
-    movieFieldRentTo,
-    movieFieldAll,
-    movieFieldEnd // To get the number of Fields. SHOULD BE AT THE END
-  };
-
-  // - Client Fields
-  enum cmdClientFields
-  {
-    clientFieldAccountNumber,
-    clientFieldId,
-    clientFieldName,
-    clientFieldPhoneNumber,
-    clientFieldAll,
-    clientFieldEnd // To get the number of Fields. SHOULD BE AT THE END
-  };
-
-  // - Command Status if it's Valid or not
-  enum cmdStatus
-  {
-    validCmd,
-    noCmd,
-    wrongMainCmd,
-    wrongSubCmd,
-    wrongViewMoviesCmd,
-    wrongFilterMoviesCmd,
-    wrongViewClientsCmd,
-    wrongSearchClientsCmd,
-    wrongMovieField,
-    wrongMovieFieldParam,
-    wrongClientFieldParam,
-    wrongSortByParam,
-    wrongBooleanAnswer
-  };
-
-  const int maxParamPerSubCmd = 6; // Max Number of Parameters per Subcommand
-
-  // - View Movies Command Parameters Structure
-  struct ViewMoviesCmd
-  {
-    bool params[movieFieldEnd];    // 1D Array to Save the Fields to Show in View Movies
-    int sortBy[movieFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
-  };
-
-  // - Filter Movies Command Parameters Structure
-  struct FilterMoviesCmd
-  {
-    string params[movieFieldEnd][maxParamPerSubCmd]; // 2D String Array of Field Parameters
-    string *paramsPtr[movieFieldEnd];                // 1D Pointer Array to to the 2D Array
-    int counter[movieFieldEnd];                      // Filter Movies Field Parameters Counter
-    int sortBy[movieFieldEnd - 1];                   // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
-  };
-
-  // - View Clients Command Parameters Structure
-  struct ViewClientsCmd
-  {
-    bool params[clientFieldEnd];    // 1D Array to Save the Fields to Show in View Clients
-    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
-  };
-
-  // - Search Clients Command Parameters Structure
-  struct SearchClientsCmd
-  {
-    string params[clientFieldEnd][maxParamPerSubCmd]; // 2D String Array of Clients Parameters
-    string *paramsPtr[clientFieldEnd];                // 1D Pointer Array to to the 2D Array
-    int counter[clientFieldEnd];
-    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
-  };
-
-  // - Command Structure
-  struct Cmd
-  { // Command, SubCommand, Field, Parameter
-    int main;
-    int sub;
-    int field;
-    int param;
-  };
-
-  // - Command Indexes Structure
-  struct CmdIndex
-  { // Used to Save the Index of the Command on its Corresponding Array
-    int main = 0;
-    int sub = 0;
-    int field = 0;
-    int param = 0;
-  };
-
-  // - Command Explanation
-  struct cmdExplanation
-  {
-    string cmd;
-    string explanation;
-  };
 }
 
 #endif
