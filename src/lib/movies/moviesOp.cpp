@@ -236,7 +236,6 @@ void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy
         moviesMergeSort(movies, sortByInt); // Sort Movies by Either the Duration or the Price
 
         if (field == movieFieldDuration)
-        {
           for (i = 0; i < nMoviesRead && (*movies).getMovie(i).duration <= compare && counter != nMoviesRead; i++)
           {
             movie = (*movies).getMovie(i);
@@ -244,9 +243,7 @@ void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy
             if (binarySearch(filteredIds, nMoviesRead, movie.id) == -1)
               addFilteredMovie(filteredIds, nMoviesRead, movie.id, &counter);
           }
-        }
         else if (field == movieFieldPrice)
-        {
           for (i = 0; i < nMoviesRead && movie.price <= compare && counter != nMoviesRead; i++)
           {
             movie = (*movies).getMovie(i);
@@ -254,7 +251,6 @@ void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy
             if (binarySearch(filteredIds, nMoviesRead, movie.id) == -1)
               addFilteredMovie(filteredIds, nMoviesRead, movie.id, &counter);
           }
-        }
         break;
 
       case movieFieldGenre:

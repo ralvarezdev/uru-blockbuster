@@ -109,8 +109,6 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
 
   ofstream outfile(clientsFilename, ios::app | ios::binary); // Write to File
 
-  cout << newClient.account << ' ' << newClient.id << ' ' << newClient.name << ' ' << newClient.phoneNumber;
-
   outfile.write((char *)&newClient, sizeof(Client));
 
   outfile.close();
@@ -162,7 +160,7 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
 
         clientsMergeSort(clients, clientFieldId * 2); // Sort Clients by Id
         for (i = 0; i < nClientsRead; i++)
-          if (!filteredIndexes[i] && getLower((*clients).getClient(index).name).find(nameLower) != string::npos)
+          if (!filteredIndexes[i] && getLower((*clients).getClient(i).name).find(nameLower) != string::npos)
           {                            // Checks if the Client Name in Lowercase Contains the Parameter that is being Searched by Linear Search
             filteredIndexes[i] = true; // Save Id
             counter++;
@@ -174,7 +172,7 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
 
         clientsMergeSort(clients, clientFieldId * 2); // Sort Clients by Id
         for (i = 0; i < nClientsRead; i++)
-          if (!filteredIndexes[i] && (*clients).getClient(index).phoneNumber == phoneNumber)
+          if (!filteredIndexes[i] && (*clients).getClient(i).phoneNumber == phoneNumber)
           {                            // Checks if the Client has the Phone Number that is being Searched by Linear Search
             filteredIndexes[i] = true; // Save Index
             counter++;

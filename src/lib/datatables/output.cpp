@@ -310,7 +310,7 @@ void printClients(Clients *clients, bool *fields)
   const int nPhoneNumber = 15;   // ... for Phone Number
 
   int nName = nChar; // Decrease the Number of Characters Used by the Name Field
-  int n = clientFieldEnd;
+  int n = clientFieldEnd - 1;
 
   int fieldsNChar[n] = {nAccountNumber, nId, 0, nPhoneNumber}; // Number of Characters per Field
 

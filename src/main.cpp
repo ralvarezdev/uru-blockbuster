@@ -500,6 +500,7 @@ void helpMessage()
   cout << "Database Manipulation Commands\n"
        << tab1 << addBrackets(cmdsChar[cmdAddMovie]) << " Add Movie\n"
        << tab1 << addBrackets(cmdsChar[cmdRentMovie]) << " Rent Movie\n"
+       << tab1 << addBrackets(cmdsChar[cmdAddClient]) << " Add Client\n"
        << "Database Search Commands:\n"
        << tab1 << addBrackets(cmdsChar[cmdMovieStatus]) << " Movie Status\n"
        << tab1 << addBrackets(cmdsChar[cmdViewMovies]) << " View Movies\n"
@@ -509,7 +510,7 @@ void helpMessage()
        << "Command Parameters:\n"
        << tab1 << addBrackets(cmdsChar[cmdSortByParameters]) << " Sort By Parameters\n"
        << tab1 << addBrackets(cmdsChar[cmdMovieParameters]) << " Movie Field Parameters\n"
-       << tab1 << addBrackets(cmdsChar[cmdClientParameters]) << " Search Client Parameters\n"
+       << tab1 << addBrackets(cmdsChar[cmdClientParameters]) << " Client Field Parameters\n"
        << tab1 << addBrackets(cmdsChar[cmdGenres]) << " Genres\n"
        << "How-To:\n"
        << tab1 << addBrackets(cmdsChar[cmdHowToUseViewMovies]) << " How to Use the View Movies Command\n"
@@ -518,9 +519,7 @@ void helpMessage()
        << tab1 << addBrackets(cmdsChar[cmdHowToUseSearchClients]) << " How to Use the Search Clients Command\n"
        << "Other Commands:\n"
        << tab1 << addBrackets(cmdsChar[cmdHelp]) << " Help\n"
-       << tab1 << addBrackets(cmdsChar[cmdExit]) << " Exit\n"
-       << "Admin Privileges:\n"
-       << tab1 << addBrackets(cmdsChar[cmdAddClient]) << " Add Client\n";
+       << tab1 << addBrackets(cmdsChar[cmdExit]) << " Exit\n";
 }
 
 // Function to Assign 2D Array to 1D Pointer, and Reset the Counters
@@ -611,7 +610,7 @@ int movieFieldCmdsChar[movieFieldEnd] = { // Movie Fields Command Character
     [movieFieldRentTo] = 'c',
     [movieFieldAll] = '.'};
 
-char *movieFieldCmdsStr[movieFieldEnd - 1] = { // Movie Fields Name
+char *movieFieldCmdsStr[movieFieldEnd] = { // Movie Fields Name
     [movieFieldId] = "Id",
     [movieFieldName] = "Title",
     [movieFieldDirector] = "Director",
@@ -621,7 +620,8 @@ char *movieFieldCmdsStr[movieFieldEnd - 1] = { // Movie Fields Name
     [movieFieldRelease] = "Release",
     [movieFieldStatus] = "Rent Status",
     [movieFieldRentOn] = "Rent On",
-    [movieFieldRentTo] = "Rent To"};
+    [movieFieldRentTo] = "Rent To",
+    [movieFieldAll] = "All"};
 
 bool movieValidFieldsToFilter[movieFieldEnd] = { // Fields that can be Used in Filter Movies Command
     [movieFieldId] = true,
@@ -643,11 +643,12 @@ int clientFieldCmdsChar[clientFieldEnd] = { // Client Fields Command Character
     [clientFieldPhoneNumber] = 'p',
     [clientFieldAll] = '.'};
 
-char *clientFieldCmdsStr[clientFieldEnd - 1] = { // Client Fields Name
+char *clientFieldCmdsStr[clientFieldEnd] = { // Client Fields Name
     [clientFieldAccountNumber] = "Account Number",
     [clientFieldId] = "Id",
     [clientFieldName] = "Name",
-    [clientFieldPhoneNumber] = "Phone Number"};
+    [clientFieldPhoneNumber] = "Phone Number",
+    [clientFieldAll] = "All"};
 
 bool clientValidFieldsToFilter[clientFieldEnd] = { // Fields that can be Used in Filter Clients Command
     [clientFieldAccountNumber] = true,
