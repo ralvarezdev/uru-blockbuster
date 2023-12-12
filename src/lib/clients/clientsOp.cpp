@@ -15,20 +15,23 @@
 using namespace std;
 using namespace clients;
 using namespace files;
+using namespace movies;
 using namespace terminal;
 
 // --- Extern Variables Declaration
 extern bool clientValidFieldsToFilter[];
 
 // --- Function Prototypes
-clientStatus getClientId(Clients *clients, int *id, int *index, string message);
 void getClients(Clients *clients);
+void overwriteClients(Clients *clients);
 void addClientToFile(Clients *clients);
 void createClientWithId(Clients *clients, Client newClient, int *index);
 void filterClientsData(Clients *clients, string **params, bool fields[], int sortBy[]);
 void sortClients(Clients *clients, int sortBy[], int n);
 void clientsMergeSort(Clients *client, int sortByIndex);
 void clientsMerge(Clients *clients, Client sorted[], int low, int mid, int high, int sortByIndex);
+clientStatus getClientId(Clients *clients, int *id, int *index, string message);
+void storeMovieMovement(string time, int clientId, int movieId, bool isRent);
 
 // Function to Get an Array of Clients from clients.csv
 void getClients(Clients *clients)
@@ -36,11 +39,11 @@ void getClients(Clients *clients)
   int count = 0, nClients = 0;
   string line, word;
 
-  ifstream clientsCSV(clientsFilename, ios::out | ios::binary);
+  ifstream clientsBIN(clientsFilename, ios::out | ios::binary);
 
-  if (!clientsCSV.is_open())
-  { // Couldn't Access to clientsCSV
-    clientsCSV.close();
+  if (!clientsBIN.is_open())
+  { // Couldn't Access to clientsBIN
+    clientsBIN.close();
     pressEnterToCont("Error: File Not Found. Press ENTER to go Back to Main Menu", true);
     return;
   }
@@ -49,8 +52,8 @@ void getClients(Clients *clients)
   { // Get Clients
     Client clientRead;
 
-    clientsCSV.read((char *)&clientRead, sizeof(Client)); // Read Structure
-    if (clientsCSV.eof())                                 // Reached End of File
+    clientsBIN.read((char *)&clientRead, sizeof(Client)); // Read Structure
+    if (clientsBIN.eof())                                 // Reached End of File
       break;
 
 #ifndef NDEBUG
@@ -61,7 +64,22 @@ void getClients(Clients *clients)
     assert(nClients == (*clients).getNumberClients() - 1); // Check if the Number of Clients Gets Increased
   }
 
-  clientsCSV.close();
+  clientsBIN.close();
+}
+
+// Function to Overwite clients.csv
+void overwriteClients(Clients *clients)
+{
+  Client client;
+
+  ofstream clientsBIN(clientsFilename);
+
+  for (int i = 0; i < (*clients).getNumberClients(); i++)
+  {
+    client = (*clients).getClient(i); // Get Client
+    clientsBIN.write((char *)&client, sizeof(Client));
+  }
+  clientsBIN.close();
 }
 
 // Function to Add Client
@@ -71,7 +89,7 @@ void addClientToFile(Clients *clients)
 
   int check, id, index = -1;
 
-  check = getClientId(clients, &id, &index, "ID"); // Get Client Id
+  check = getClientId(clients, &id, &index, "Client ID"); // Get Client Id
 
   if (check != clientNotFound) // The Id has been Added to that File
   {
@@ -92,14 +110,24 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
   int nClients = (*clients).getNumberClients();
   string temp;
 
-  cout << "Name: "; // Get Client Name
-  getline(cin, temp);
-  for (int i = 0; i < nFieldChars && i < temp.length(); i++)
-    newClient.name[i] = temp[i];
+  while (true)
+  {
+    cout << "Name: "; // Get Client Name
+    getline(cin, temp);
+
+    if (temp.length() == 0)
+      continue;
+
+    for (int i = 0; i < nFieldChars && i < temp.length(); i++)
+      newClient.name[i] = temp[i];
+
+    break;
+  }
 
   newClient.phoneNumber = getDouble("Phone Number", 0, maxPhoneNumber, 0); // Get Client Phone Number
 
   // Get Client Account Number. Previously, Sorted by Id in Ascending Order (in getClientId Function)
+  clientsMergeSort(clients, clientFieldAccountNumber * 2);
   if (nClients > 0)
     newClient.account = (*clients).getClient(nClients - 1).account + 1;
   else
@@ -107,11 +135,13 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
 
   (*clients).pushBack(newClient);
 
-  ofstream outfile(clientsFilename, ios::app | ios::binary); // Write to File
+  ofstream clientsBIN(clientsFilename, ios::app | ios::binary); // Write to File
 
-  outfile.write((char *)&newClient, sizeof(Client));
+  clientsBIN.write((char *)&newClient, sizeof(Client));
 
-  outfile.close();
+  clientsBIN.close();
+
+  cout << '\n';
   pressEnterToCont("Client Added Successfully!", false);
 }
 
@@ -121,7 +151,7 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
   clientStatus clientStatus;
   double phoneNumber;
   int i, id, account, index = 0, counter = 0, nClientsRead = (*clients).getNumberClients();
-  string nameLower;
+  string message, nameLower;
 
   assert(nClientsRead >= 0); // Check if the Number of Clients is Greater or Equal to 0
 
@@ -189,7 +219,7 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
   sortClients(&filteredClients, sortBy, clientFieldEnd - 1); // Sort Clients
   printClients(&filteredClients, fields);                    // Print Clients
 
-  string message = "Number of Coincidences: ";
+  message = "Number of Coincidences: ";
   message.append(to_string(counter));
 
   if (counter == 0)
@@ -307,6 +337,21 @@ clientStatus getClientId(Clients *clients, int *id, int *index, string message)
     {
       wrongClientData(invalidClientId);
     }
+}
+
+// Function to Store Client Movie Rent or Return
+void storeMovieMovement(string time, int clientId, int movieId, bool isRent)
+{
+  string movieMov = (isRent) ? "rented" : "returned";
+
+  ofstream rentsCSV(rentsFilename, ios::app);
+
+  // Client ID that Rents the Movie, Movie Rented ID
+  rentsCSV << clientId << sep // Write to File at Last Line
+           << movieId << sep
+           << movieMov << sep
+           << time << "\n";
+  rentsCSV.close();
 }
 
 /*

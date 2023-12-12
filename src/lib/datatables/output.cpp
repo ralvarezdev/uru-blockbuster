@@ -86,7 +86,7 @@ void printExamples(cmdExplanation examples[], int n)
 // Function to Print Movie Info
 void printMovieInfo(Movie movie)
 {
-  bool rented = (movie.rentStatus == 1);
+  bool rented = (movie.rentStatus);
   int nCharContent = nChar - nCharField;
   string fieldTitle;
 
@@ -150,6 +150,7 @@ void printMovies(Movies *movies, bool *fields)
     if (fields[i] && i != movieFieldName)
       nTitle -= fieldsNChar[i]; // Decrease Number of Characters for Movie's Name Field
 
+  assert(nTitle > 0);                   // Check nName
   fieldsNChar[movieFieldName] = nTitle; // Assign Number of Characters for Movie's Name
 
   cout << clear << sgrBgCmd << sgrFgCmd;
@@ -157,6 +158,12 @@ void printMovies(Movies *movies, bool *fields)
     if (fields[i])
       cout << setw(fieldsNChar[i]) << setfill(' ') << movieFieldCmdsStr[i]; // Field Title
   cout << reset << '\n';
+
+  if ((*movies).getNumberMovies() == 0) // No Clients
+  {
+    cout << string(nChar, '-') << "\n\n";
+    return; // End this Function
+  }
 
   // Print Movies
   int *date;
@@ -326,6 +333,12 @@ void printClients(Clients *clients, bool *fields)
     if (fields[i])
       cout << setw(fieldsNChar[i]) << setfill(' ') << clientFieldCmdsStr[i]; // Field Title
   cout << reset << '\n';
+
+  if ((*clients).getNumberClients() == 0) // No Clients
+  {
+    cout << string(nChar, '-') << "\n\n";
+    return; // End this Function
+  }
 
   // Print Clients
   string temp;

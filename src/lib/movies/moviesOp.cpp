@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -24,8 +23,8 @@ extern bool movieValidFieldsToFilter[];
 extern char *genreStr[];
 
 // --- Functions Prototypes
-movieStatus getMovieId(Movies *movies, int *id, int *index, string message);
 void getMovies(Movies *movies);
+void overwriteMovies(Movies *movies);
 void addMovieToFile(Movies *movies);
 movieStatus checkMovie(Movies *movies, int id, int *index);
 void getGenres(string word, int genres[], int n);
@@ -41,7 +40,7 @@ void moviesMergeSort(Movies *movies, int sortByIndex);
 void moviesMerge(Movies *movies, Movie sorted[], int low, int mid, int high, int sortByIndex);
 string getGenresStr(int genres[]);
 string getDateStr(int date[3]);
-string getCurrentDate(int date[]);
+movieStatus getMovieId(Movies *movies, int *id, int *index, string message);
 
 // Function to Get an Array of Movies from movies.csv
 void getMovies(Movies *movies)
@@ -69,7 +68,9 @@ void getMovies(Movies *movies)
       fill(genres, genres + genreEnd, -1); // Initialize Genres Array
 
       stringstream file(line);
-      Movie newMovie;
+      Movie newMovie = Movie();
+
+      newMovie.rentStatus = 0;
 
       count = 0;
       while (getline(file, word, sep))
@@ -132,6 +133,40 @@ void getMovies(Movies *movies)
   moviesCSV.close();
 }
 
+// Function to Overwite movies.csv
+void overwriteMovies(Movies *movies)
+{
+  int n;
+  Movie movie;
+
+  ostringstream content;
+  ofstream moviesCSV(moviesFilename);
+
+  content << "id, movie, genres, duration, director, release_on, rent_to, rent_on, status\n"; // Overwrite Header
+  for (int i = 0; i < (*movies).getNumberMovies(); i++)
+  {
+    movie = (*movies).getMovie(i); // Get Movie
+
+    content << movie.id << sep
+            << movie.name << sep
+            << getGenresStr(movie.genres) << sep
+            << movie.duration << sep
+            << movie.director << sep
+            << movie.price << sep
+            << getDateStr(movie.releaseDate) << sep;
+
+    if (movie.rentStatus)
+      content << movie.rentTo << sep << getDateStr(movie.rentOn)
+              << sep << true << '\n';
+    else
+      content << string(2, sep) << '\n';
+  }
+
+  assert(content.str().length() > 0); // Check if the Content Could be Added to the Stream
+  moviesCSV << content.str();         // Write Content to movies.csv
+  moviesCSV.close();
+}
+
 // Function to Get Movie Genres
 void getGenres(string word, int genres[], int n)
 {
@@ -188,7 +223,7 @@ void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy
   movieStatus movieStatus;
   Movie movie;
   int i, j, id, compare, index, genreIndex, sortByInt, counter = 0, nMoviesRead = (*movies).getNumberMovies();
-  string compareLower, nameLower;
+  string message, compareLower, nameLower;
 
   assert(nMoviesRead > 0); // Check if the Number of Movies is Greater than 0
 
@@ -298,7 +333,7 @@ void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy
   sortMovies(&filteredMovies, sortBy, movieFieldEnd - 1); // Sort Movies
   printMovies(&filteredMovies, fields);                   // Print Movies
 
-  string message = "Number of Coincidences: ";
+  message = "Number of Coincidences: ";
   message.append(to_string(counter));
 
   if (counter == 0)
@@ -380,7 +415,7 @@ void addMovieToFile(Movies *movies)
 
   string release;
 
-  check = getMovieId(movies, &id, &index, "ID"); // Get Movie ID
+  check = getMovieId(movies, &id, &index, "Movie ID"); // Get Movie ID
 
   if (check != movieNotFound)
   { // The Id has been Added to that File
@@ -392,8 +427,17 @@ void addMovieToFile(Movies *movies)
   assert(id > 0 && index == -1); // Check Client Id and Index
   newMovie.id = id;              // Assign Movie ID
 
-  cout << "Title: "; // Get Movie Title
-  getline(cin, newMovie.name);
+  while (true)
+  {
+    cout << "Title: "; // Get Movie Title
+    getline(cin, temp);
+
+    if (temp.length() == 0)
+      continue;
+
+    newMovie.name = temp;
+    break;
+  }
 
   while (true) // Get Movie Genres
     try
@@ -525,6 +569,7 @@ movieStatus checkMovie(Movies *movies, int id, int *index)
     else
       end = mid - 1;
   }
+  *index = -1; // Set Index to -1
   return movieNotFound;
 }
 
@@ -680,29 +725,4 @@ movieStatus getMovieId(Movies *movies, int *id, int *index, string message)
     {
       wrongMovieData(invalidMovieId);
     }
-}
-
-// Function to Get Movie Rent Date as an Array of Integers
-string getCurrentDate(int date[])
-{
-  time_t t = time(nullptr); // Get Time since Epoch as a Textual Representation
-  tm tm = *localtime(&t);   // Get tm Structure
-
-  ostringstream stream; // Get Date as a String
-
-  for (int i = 0; i < 3; i++)
-  {
-    if (i == 0)
-      stream << put_time(&tm, "%Y"); // Save Year
-    else if (i == 1)
-      stream << put_time(&tm, "%m"); // Save Month
-    else
-      stream << put_time(&tm, "%d"); // Save Day
-
-    date[i] = stoi(stream.str());
-    stream.str(""); // Clear String
-  }
-
-  stream << put_time(&tm, "%Y-%m-%d");
-  return stream.str(); // Return Stream as a String
 }

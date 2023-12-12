@@ -15,6 +15,7 @@ using namespace terminal;
 // --- Functions
 void printExamples(cmdExplanation examples[], int n);
 void printDate(int date[], bool rightJustified);
+void printMovieInfo(Movie movie);
 void printMovies(Movies *movies, bool *fields);
 void printClientInfo(Client client, bool censoreInfo);
 void printClients(Clients *clients, bool *fields);

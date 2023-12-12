@@ -17,11 +17,19 @@ using namespace movies;
 int isCharOnArray(int character, int array[], int n);
 void addMovie(Movies *movies);
 void rentMovie(Movies *movies, Clients *clients);
-void getMovieStatus(Movies *movies);
+void returnMovie(Movies *movies, Clients *clients);
+void removeMovie(Movies *movies);
+void addClient(Clients *clients);
+movieStatus getClientRent(Movies *movies, int clientId, int *movieId);
+void removeClient(Movies *movies, Clients *clients);
 void viewMovies(Movies *movies, bool fields[], int sortBy[]);
 void filterMovies(Movies *movies, string **params, int sortBy[]);
+void displayRentedMovies(Movies *movies);
+void clientRentedMovies();
+void getMovieStatus(Movies *movies);
 void viewClients(Clients *clients, bool fields[], int sortBy[]);
 void searchClients(Clients *clients, string **params, int sortBy[]);
+void validParameters(int nCharTitle);
 void movieFields();  // As a Parameter or as a Subcommand
 void clientFields(); // As a Parameter or as a Subcommand
 void sortByParameters();
@@ -30,7 +38,9 @@ void howToUseViewMovies();
 void howToUseFilterMovies();
 void howToUseViewClients();
 void howToUseSearchClients();
-void addClient(Clients *clients);
+int getMovieSortByStr(int sortBy[], string sortByStr[], int n);
+int getClientSortByStr(int sortBy[], string sortByStr[], int n);
+void deleteHistory(int id, bool isMovieId);
 
 // --- Templates
 

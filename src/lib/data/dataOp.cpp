@@ -22,7 +22,8 @@ using namespace movies;
 using namespace terminal;
 
 // --- Extern Variables Declaration
-extern bool movieValidFieldsToFilter[], clientValidFieldsToFilter[];
+extern bool movieValidFieldsToFilter[], clientValidFieldsToFilter[],
+    movieValidFieldsToSort[], clientValidFieldsToSort[];
 extern char *movieFieldCmdsStr[], *clientFieldCmdsStr[], *genreStr[];
 extern int movieFieldCmdsChar[], clientFieldCmdsChar[];
 
@@ -30,10 +31,17 @@ extern int movieFieldCmdsChar[], clientFieldCmdsChar[];
 int isCharOnArray(int character, int array[], int n);
 void addMovie(Movies *movies);
 void rentMovie(Movies *movies, Clients *clients);
-void printMovieInfo(Movie movie);
+void returnMovie(Movies *movies, Clients *clients);
+void removeMovie(Movies *movies);
+void addClient(Clients *clients);
+movieStatus getClientRent(Movies *movies, int clientId, int *movieId);
+void removeClient(Movies *movies, Clients *clients);
 void viewMovies(Movies *movies, bool fields[], int sortBy[]);
 void filterMovies(Movies *movies, string **params, int sortBy[]);
+void displayRentedMovies(Movies *movies);
+void clientRentedMovies();
 void getMovieStatus(Movies *movies);
+void viewClients(Clients *clients, bool fields[], int sortBy[]);
 void searchClients(Clients *clients, string **params, int sortBy[]);
 void validParameters(int nCharTitle);
 void movieFields();
@@ -44,9 +52,9 @@ void howToUseViewMovies();
 void howToUseFilterMovies();
 void howToUseViewClients();
 void howToUseSearchClients();
-void addClient(Clients *clients);
 int getMovieSortByStr(int sortBy[], string sortByStr[], int n);
 int getClientSortByStr(int sortBy[], string sortByStr[], int n);
+void deleteHistory(int id, bool isMovieId);
 
 // --- Functions
 
@@ -81,16 +89,16 @@ void rentMovie(Movies *movies, Clients *clients)
 {
   Client client = Client();
   int movieId, movieIndex, clientId, clientIndex, nMoviesRead = (*movies).getNumberMovies(), nClientsRead = (*clients).getNumberClients();
+  int date[3];
   clientStatus clientStatus;
   movieStatus movieStatus;
-  string message, temp;
+  string message, time;
 
   cout << clear;
   printTitle("Rent Movie", applyBgColor, applyFgColor, false);
 
   cout << '\n';
-
-  movieStatus = getMovieId(movies, &movieId, &movieIndex, "Movie ID to Rent: "); // Get Movie ID
+  movieStatus = getMovieId(movies, &movieId, &movieIndex, "Movie ID to Rent"); // Get Movie ID
 
   assert(movieId > 0); // Check Movie Id
 
@@ -114,50 +122,250 @@ void rentMovie(Movies *movies, Clients *clients)
 
   if (movieStatus != movieNotRented)
     return; // End this Function
+  else if (!booleanQuestion("Is this the Movie you want to Rent?"))
+    return; // End this Function
 
   cout << clear;
   printTitle("Rent Movie", applyBgColor, applyFgColor, false);
 
-  clientStatus = getClientId(clients, &clientId, &clientIndex, "Client ID: "); // Get Client ID
-
-  if (clientStatus == clientNotFound)
+  while (true)
   {
-    client.id = clientId;
-    createClientWithId(clients, client, &clientIndex);
+    cout << '\n';
+    clientStatus = getClientId(clients, &clientId, &clientIndex, "Client ID"); // Get Client ID
+
+    if (clientStatus == clientNotFound)
+    {
+      client.id = clientId;
+      cout << '\n';
+      createClientWithId(clients, client, &clientIndex);
+      break;
+    }
+    else if (getClientRent(movies, clientId, &movieId) == movieRented)
+    { // Check if the Client has Already a Rent
+      message = "Error: Client Hasn't Returned Some Movies";
+      pressEnterToCont(message, true);
+      return; // End this Function
+    }
+    else
+    {
+      client = (*clients).getClient(clientIndex); // Get Client Index
+
+      cout << '\n';
+      printClientInfo(client, true);
+      cout << '\n';
+
+      if (booleanQuestion("Is this your Account?"))
+        break;
+    }
   }
+
   assert(clientId > 0 && clientIndex >= 0); // Check Client Id and Index
 
+  moviesMergeSort(movies, movieFieldId * 2);
   (*movies).rentMovie(clientId, movieIndex); // Rent Movie
 
-  ofstream outfile(moviesFilename); // Update the movies.csv file with the Movie that was Rented
+  time = getCurrentDate(date);
+  storeMovieMovement(time, clientId, movieId, true); // Store Movie Rent in rents.csv
 
-  int rentOn[3];
-  Movie movie;
-  string genresStr, dateStr, rentOnStr;
-
-  if (!outfile.is_open())
-    pressEnterToCont("Error: File Not Found. Press ENTER to go Back to Main Menu", true);
-  else
-    for (int i = 0; i < nMoviesRead; i++)
-    {
-      movie = (*movies).getMovie(i); // Get Movie
-      genresStr = getGenresStr(movie.genres);
-      dateStr = getDateStr(movie.releaseDate);
-      rentOnStr = getCurrentDate(movie.rentOn); // Get Current Date
-
-      outfile << movie.id << sep << movie.name << sep << genresStr
-              << sep << movie.duration << sep << movie.director
-              << sep << movie.price << sep << dateStr;
-
-      if (movie.rentStatus)
-        outfile << sep << movie.rentTo << sep << rentOnStr
-                << sep << true << '\n';
-      else
-        outfile << string(3, sep) << '\n';
-    }
-  outfile.close();
+  overwriteMovies(movies);
 
   pressEnterToCont("Movie Rented Successfully!", false);
+}
+
+// Function to Return Movie
+void returnMovie(Movies *movies, Clients *clients)
+{
+  Client client;
+  Movie movie;
+  int movieId, movieIndex, clientId, clientIndex, date[3];
+  clientStatus clientStatus;
+  movieStatus movieStatus;
+  string time;
+
+  cout << clear;
+  printTitle("Return Movie", applyBgColor, applyFgColor, false);
+
+  while (true)
+  {
+    cout << '\n';
+    clientStatus = getClientId(clients, &clientId, &clientIndex, "Client ID"); // Get Client ID
+
+    assert(clientId > 0); // Check Client Id
+
+    cout << '\n';
+    if (clientStatus == clientNotFound)
+    {
+      pressEnterToCont("Error 404: Client Not Found. Run \"Add Client Command\"", true);
+      return; // End this Function
+    }
+
+    assert(clientIndex >= 0); // Check Client Index
+
+    printClientInfo((*clients).getClient(clientIndex), true);
+    cout << '\n';
+
+    if (booleanQuestion("Is this your Account?"))
+      break;
+  }
+
+  movieStatus = getClientRent(movies, clientId, &movieId); // Get Movie Rent ID
+
+  cout << '\n';
+  if (movieStatus != movieRented)
+  { // Client doesn't have Any Movie Rented
+    pressEnterToCont("Error 404:Client doesn't have Any Rent", true);
+    return; // End this Function
+  }
+
+  checkMovie(movies, movieId, &movieIndex); // Get Movie Index
+
+  assert(movieId > 0 && movieIndex >= 0); // Check Movie Id and Index
+
+  movie = (*movies).getMovie(movieIndex); // Get Movie
+  printMovieInfo(movie);
+  cout << '\n';
+
+  if (!booleanQuestion("Do you want to Return the Movie?"))
+    return; // End of this Function
+
+  (*movies).returnMovie(movieIndex); // Set Movie to Available for Rent
+
+  time = getCurrentDate(date);
+  storeMovieMovement(time, clientId, movieId, false); // Store Movie Return in rents.csv
+
+  overwriteMovies(movies); // Overwrite Movies
+
+  pressEnterToCont("Movie Returned Successfully!", false);
+}
+
+// Function to Remove Movie from movies.csv
+void removeMovie(Movies *movies)
+{
+  bool deleteMovie;
+  movieStatus check;
+  int id, index = -1;
+
+  cout << clear;
+  printTitle("Remove Movie", applyBgColor, applyFgColor, false);
+
+  cout << '\n';
+  check = getMovieId(movies, &id, &index, "Movie ID");
+
+  if (check == movieNotFound)
+  {                                // The Id hasn't been Added to that File
+    assert(id > 0 && index == -1); // Check Movie Id and Index
+    cout << '\n';
+    pressEnterToCont("Error 404: Movie Not Found. Run \"Add Movie Command\"", true);
+    return; // End this Function
+  }
+
+  assert(id > 0 && index >= 0); // Check Movie Id and Index
+
+  cout << '\n';
+  printMovieInfo((*movies).getMovie(index)); // Print Movie Info
+  cout << '\n';
+
+  if (booleanQuestion("Is this the Movie you want to Delete?"))
+    if (booleanQuestion("Are you 100% Sure?"))
+      deleteMovie = true;
+
+  if (deleteMovie)
+  {
+    (*movies).deleteAt(index); // Delete Movie
+    deleteHistory(id, true);   // Delete Movie Rent History
+    overwriteMovies(movies);   // Overwrite Movies
+
+    pressEnterToCont("Movie Deleted", true);
+  }
+}
+
+// Function to Add Some Clients to clients.csv
+void addClient(Clients *clients)
+{
+  while (true)
+  {
+    cout << clear;
+    printTitle("Add Client", applyBgColor, applyFgColor, false);
+
+    cout << '\n';
+    addClientToFile(clients);
+
+    if (!booleanQuestion("Do you want to Add more Clients?"))
+      break;
+  }
+}
+
+// Get Movie ID Rented by the Given Client ID
+movieStatus getClientRent(Movies *movies, int clientId, int *movieId)
+{
+  int mid, startA = 0, endA = (*movies).getNumberMovies() - 1;
+  Movie movie;
+
+  moviesMergeSort(movies, movieFieldRentTo * 2); // Sort Movies by Rent Field
+
+  while (startA <= endA)
+  {
+    mid = startA + (endA - startA) / 2;
+    movie = (*movies).getMovie(mid);
+
+    if (movie.rentTo == clientId)
+    {
+      *movieId = movie.id;
+      break;
+    }
+    else if (movie.rentTo < clientId)
+      startA = mid + 1;
+    else
+      endA = mid - 1;
+  }
+
+  return (*movieId == movie.id) ? movieRented : movieNotFound;
+}
+
+// Function to Remove Client from clients.bin
+void removeClient(Movies *movies, Clients *clients)
+{
+  bool deleteClient;
+  clientStatus check;
+  int clientId, movieId, index = -1;
+
+  cout << clear;
+  printTitle("Remove Client", applyBgColor, applyFgColor, false);
+
+  cout << '\n';
+  check = getClientId(clients, &clientId, &index, "Client ID");
+
+  if (check == clientNotFound)
+  {                                      // The Id hasn't been Added to that File
+    assert(clientId > 0 && index == -1); // Check Client Id and Index
+    cout << '\n';
+    pressEnterToCont("Error 404: Client Not Found. Run \"Add Client Command\"", true);
+    return; // End this Function
+  }
+  else if (getClientRent(movies, clientId, &movieId) == movieRented)
+  { // Check if the Client has Already a Rent
+    pressEnterToCont("Error: Client Hasn't Returned Some Movies", true);
+    return; // End this Function
+  }
+
+  assert(clientId > 0 && index >= 0); // Check Client Id and Index
+
+  cout << '\n';
+  printClientInfo((*clients).getClient(index), true); // Print Client Info
+  cout << '\n';
+
+  if (booleanQuestion("Is this the Client Account you want to Delete?"))
+    if (booleanQuestion("Are you 100% Sure?"))
+      deleteClient = true;
+
+  if (deleteClient)
+  {
+    (*clients).deleteAt(index);     // Delete Client
+    deleteHistory(clientId, false); // Delete Client Rent History
+    overwriteClients(clients);      // Overwrite Clients
+
+    pressEnterToCont("Client Deleted", true);
+  }
 }
 
 // Function to View Movies
@@ -225,6 +433,63 @@ void filterMovies(Movies *movies, string **params, int sortBy[])
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
+// Function to Display Either Rented or Avalaible Movies
+void displayRentedMovies(Movies *movies)
+{
+  bool isRented;
+  int counter;
+  string message;
+  Movie movie;
+  Movies filteredMovies = Movies();
+
+  int m = movieFieldEnd - 1;
+  assert(m > 0); // Check Variables
+
+  bool fields[m];
+  for (int i = 0; i < m; i++)
+    fields[i] = true;
+
+  cout << clear;
+  printTitle("Rented Movies", applyBgColor, applyFgColor, false);
+
+  cout << '\n';
+  isRented = booleanQuestion("Do you want to Display Rented Movies?");
+
+  if (isRented)
+    moviesMergeSort(movies, movieFieldStatus * 2 + 1); // Sort Movies by Rent Field in Descending Order
+  else
+    moviesMergeSort(movies, movieFieldStatus * 2); // Sort Movies by Rent Field in Ascending Order
+
+  for (int i = 0; i < (*movies).getNumberMovies(); i++)
+  {
+    movie = (*movies).getMovie(i); // Get Movie
+
+    if (movie.rentStatus == isRented)
+      filteredMovies.pushBack(movie);
+  }
+
+  counter = filteredMovies.getNumberMovies();
+
+  cout << clear;
+  printMovies(&filteredMovies, fields); // Print Movies
+
+  message = "Number of Coincidences: ";
+  message.append(to_string(counter));
+
+  if (counter == 0)
+    cout << string(nChar, '-') << '\n';
+
+  cout << '\n';
+  printTitle(message, applyBgColor, applyFgColor, (counter == 0) ? true : false); // Print Number of Coincidences
+
+  filteredMovies.deallocate(); // Deallocate Memory
+
+  cout << '\n';
+  pressEnterToCont("Press ENTER to Continue", false);
+}
+
+void clientRentedMovies() { cout << "to develop"; }
+
 // Function to Check Movie Rent Status
 void getMovieStatus(Movies *movies)
 {
@@ -235,7 +500,7 @@ void getMovieStatus(Movies *movies)
   printTitle("Get Movie Status", applyBgColor, applyFgColor, false);
 
   cout << '\n';
-  movieStatus = getMovieId(movies, &id, &index, "ID: "); // Get Movie ID
+  movieStatus = getMovieId(movies, &id, &index, "Movie ID"); // Get Movie ID
 
   assert(id > 0); // Check Movie Id
 
@@ -365,7 +630,7 @@ void sortByParameters()
 
   for (int i = 0; i <= movieFieldEnd - 1; i++)
   {
-    if (!movieValidFieldsToFilter[i]) // Invalid Field to Filter
+    if (!movieValidFieldsToSort[i]) // Invalid Field to Sort
       continue;
 
     cmd = movieFieldCmdsChar[i]; // Get Field Command
@@ -383,7 +648,7 @@ void sortByParameters()
 
   for (int i = 0; i <= clientFieldEnd - 1; i++)
   {
-    if (!clientValidFieldsToFilter[i]) // Invalid Field to Filter
+    if (!clientValidFieldsToSort[i]) // Invalid Field to Sort By
       continue;
 
     cmd = clientFieldCmdsChar[i]; // Get Field Command
@@ -508,22 +773,6 @@ void howToUseSearchClients()
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
-// Function to Add Some Clients to clients.csv
-void addClient(Clients *clients)
-{
-  while (true)
-  {
-    cout << clear;
-    printTitle("Add Client", applyBgColor, applyFgColor, false);
-
-    cout << '\n';
-    addClientToFile(clients);
-
-    if (!booleanQuestion("Do you want to Add more Clients?"))
-      break;
-  }
-}
-
 // Function to Get a String Array from a Int Array of the Sort By Commands that will be Applied to the Movies
 int getMovieSortByStr(int sortBy[], string sortByStr[], int n)
 {
@@ -565,8 +814,10 @@ int getClientSortByStr(int sortBy[], string sortByStr[], int n)
   {
     sortByIndex = sortBy[j];
     nullParam = false;
+
     assert(sortByIndex == -1 || sortByIndex >= 0 && sortByIndex < (clientFieldEnd - 1) * 2); // Check Sort By Index
-    ascOrder = sortByIndex % 2 == 0;                                                         // If the Index is an Odd Number, it's in Descending Order
+
+    ascOrder = sortByIndex % 2 == 0; // If the Index is an Odd Number, it's in Descending Order
     fieldIndex = sortByIndex / 2;
 
     if (sortByIndex == -1)
@@ -581,4 +832,75 @@ int getClientSortByStr(int sortBy[], string sortByStr[], int n)
   }
   assert(nParams >= 0); // Check nParams
   return nParams;
+}
+
+// Function to Delete Rent History
+void deleteHistory(int id, bool isMovieId)
+{
+  string line, word;
+  int tempId, count;
+
+  ostringstream rents;
+  ifstream ifRentsCSV(rentsFilename);
+
+  while (getline(ifRentsCSV, line)) // Get Movie Rents
+    try
+    {
+      if (line.length() == 0)
+        continue;
+
+      stringstream file(line);
+
+      count = 0;
+      while (getline(file, word, sep))
+      {
+        if (word.length() != 0)
+          switch (count)
+          {
+          case 0:
+            try
+            {
+              tempId = stoi(word); // Client Id
+              if (!isMovieId && tempId == id)
+                rents << deletedClient;
+              else
+                rents << tempId;
+            }
+            catch (...)
+            {
+              rents << deletedClient;
+            }
+            break;
+          case 1:
+            try
+            {
+              tempId = stoi(word); // Movie Id
+              if (isMovieId && tempId == id)
+                rents << deletedMovie;
+              else
+                rents << tempId;
+            }
+            catch (...)
+            {
+              rents << deletedMovie;
+            }
+            break;
+          default:
+            rents << word; // Movie Movement, Movie Movement Time
+          }
+        rents << sep;
+        count++;
+      }
+      rents << '\n';
+    }
+    catch (...)
+    {
+      // It will Ignore the Line that was Read from rents.csv
+    }
+  ifRentsCSV.close();
+
+  ofstream ofRentsCSV(rentsFilename);
+
+  ofRentsCSV << rents.str(); // Write Rents Stream Content to rents.csv
+  ofRentsCSV.close();
 }

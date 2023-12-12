@@ -7,7 +7,9 @@ using namespace std;
 
 // --- Function Prototypes
 bool getOlderDate(int date1[3], int date2[3]);
+string getCurrentDate(int date[]);
 
+// --- Namespaces
 namespace files
 {
   const char sep = ';', genreSep = '|', dateSep = '-'; // Separators
@@ -61,12 +63,18 @@ namespace commands
   enum cmds
   {
     cmdAddMovie,
-    cmdRentMovie,
     cmdMovieStatus,
+    cmdRentMovie,
+    cmdReturnMovie,
+    cmdRemoveMovie,
+    cmdAddClient,
+    cmdRemoveClient,
     cmdViewMovies,
     cmdFilterMovies,
     cmdViewClients,
     cmdSearchClients,
+    cmdDisplayRentedMovies,
+    cmdClientRentedMovies,
     cmdMovieParameters,
     cmdClientParameters,
     cmdSortByParameters,
@@ -75,7 +83,6 @@ namespace commands
     cmdHowToUseFilterMovies,
     cmdHowToUseViewClients,
     cmdHowToUseSearchClients,
-    cmdAddClient,
     cmdHelp,
     cmdExit,
     cmdEnd // To get the number of Commands. SHOULD BE AT THE END
@@ -144,8 +151,8 @@ namespace commands
   // - View Movies Command Parameters Structure
   struct ViewMoviesCmd
   {
-    bool params[movieFieldEnd - 1]; // 1D Array to Save the Fields to Show in View Movies
-    int sortBy[movieFieldEnd - 1];  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    bool params[movieFieldEnd];    // 1D Array to Save the Fields to Show in View Movies
+    int sortBy[movieFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - Filter Movies Command Parameters Structure
@@ -160,8 +167,8 @@ namespace commands
   // - View Clients Command Parameters Structure
   struct ViewClientsCmd
   {
-    bool params[clientFieldEnd - 1]; // 1D Array to Save the Fields to Show in View Clients
-    int sortBy[clientFieldEnd - 1];  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    bool params[clientFieldEnd];    // 1D Array to Save the Fields to Show in View Clients
+    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - Search Clients Command Parameters Structure
@@ -315,10 +322,10 @@ namespace clients
       switch (field)
       {
       case commands::clientFieldAccountNumber:
-        isI = (this->array[*i].account < this->array[*j].account);
+        isI = (this->array[*i].account <= this->array[*j].account);
         break;
       case commands::clientFieldId:
-        isI = (this->array[*i].id < this->array[*j].id);
+        isI = (this->array[*i].id <= this->array[*j].id);
         break;
       case commands::clientFieldName:
         clientName1 = this->array[*i].name;
@@ -331,7 +338,7 @@ namespace clients
             isI = clientName1[n] <= clientName2[n]; // To Make the Algorithm Stable
         break;
       case commands::clientFieldPhoneNumber:
-        isI = (this->array[*i].phoneNumber < this->array[*j].phoneNumber);
+        isI = (this->array[*i].phoneNumber <= this->array[*j].phoneNumber);
         break;
       }
 
@@ -351,8 +358,10 @@ namespace clients
   };
 
   const string clientsFilename = "clients.bin"; // Clients Filename
-  const int precision = 2;                      // Precision for Floats and Doubles (Used on Client Phone Number)
-  const double maxPhoneNumber = 100000000000;   // Max Phone Number
+  const string rentsFilename = "rents.csv";     // Rents Filename
+  const string deletedClient = "delClient";
+  const int precision = 2;                    // Precision for Floats and Doubles (Used on Client Phone Number)
+  const double maxPhoneNumber = 100000000000; // Max Phone Number
 }
 
 namespace movies
@@ -448,10 +457,17 @@ namespace movies
 
     Movie getMovie(int index) { return this->array[index]; } // Return Movie Structure at the Given Index
 
-    void rentMovie(int clientId, int movieIndex)
+    void rentMovie(int clientId, int movieIndex) // Rent Movie
     {
-      this->array[movieIndex].rentTo = clientId; // Change Movie Rent To Field
-      this->array[movieIndex].rentStatus = true; // Change Movie Rent Status Field
+      getCurrentDate(this->array[movieIndex].rentOn); // Change Movie Rent On Field
+      this->array[movieIndex].rentTo = clientId;      // Change Movie Rent To Field
+      this->array[movieIndex].rentStatus = true;      // Change Movie Rent Status Field
+    }
+
+    void returnMovie(int movieIndex) // Return Movie
+    {
+      this->array[movieIndex].rentStatus = false; // Set Movie Rent Status to False
+      this->array[movieIndex].rentTo = -1;        // Set to NULL Id
     }
 
     void pushBack(Movie newMovie)
@@ -512,32 +528,32 @@ namespace movies
       switch (field)
       {
       case commands::movieFieldId:
-        isI = (this->array[*i].id < this->array[*j].id);
+        isI = (this->array[*i].id <= this->array[*j].id);
         break;
       case commands::movieFieldName:
-        isI = (this->array[*i].name.compare(this->array[*j].name) < 0);
+        isI = (this->array[*i].name.compare(this->array[*j].name) <= 0);
         break;
       case commands::movieFieldDirector:
-        isI = (this->array[*i].director.compare(this->array[*j].director) < 0);
+        isI = (this->array[*i].director.compare(this->array[*j].director) <= 0);
         break;
       // case commands::movieFieldGenre: // NOT DEFINED
       case commands::movieFieldDuration:
-        isI = (this->array[*i].duration < this->array[*j].duration);
+        isI = (this->array[*i].duration <= this->array[*j].duration);
         break;
       case commands::movieFieldPrice:
-        isI = (this->array[*i].price < this->array[*j].price);
+        isI = (this->array[*i].price <= this->array[*j].price);
         break;
       case commands::movieFieldRelease:
         isI = getOlderDate(this->array[*i].releaseDate, this->array[*j].releaseDate);
         break;
       case commands::movieFieldStatus:
-        isI = (this->array[*i].rentStatus < this->array[*j].rentStatus);
+        isI = (this->array[*i].rentStatus <= this->array[*j].rentStatus);
         break;
       case commands::movieFieldRentOn:
         isI = getOlderDate(this->array[*i].rentOn, this->array[*j].rentOn);
         break;
       case commands::movieFieldRentTo:
-        isI = (this->array[*i].rentTo < this->array[*j].rentTo);
+        isI = (this->array[*i].rentTo <= this->array[*j].rentTo);
         break;
       }
 
@@ -556,8 +572,9 @@ namespace movies
     }
   };
 
-  const int nMaxGenres = 5;                   // Max Number of Genres Per Movie
   const string moviesFilename = "movies.csv"; // Movies Filename
+  const string deletedMovie = "delMovie";
+  const int nMaxGenres = 5; // Max Number of Genres Per Movie
 }
 
 #endif

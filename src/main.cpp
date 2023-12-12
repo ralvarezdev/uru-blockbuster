@@ -27,7 +27,8 @@ That's the reason why the program is written like this
 */
 
 // --- Extern Variables Declaration (ASSIGNMENT AT THE END OF THIS FILE)
-extern bool movieValidFieldsToFilter[], clientValidFieldsToFilter[];
+extern bool movieValidFieldsToFilter[], clientValidFieldsToFilter[],
+    movieValidFieldsToSort[], clientValidFieldsToSort[];
 extern int cmdsChar[], subCmdsChar[], movieFieldCmdsChar[], clientFieldCmdsChar[];
 extern char *movieFieldCmdsStr[], *clientFieldCmdsStr[], *genreStr[];
 
@@ -189,12 +190,12 @@ int main(int argc, char **argv)
         fill(viewMoviesCmd.sortBy, viewMoviesCmd.sortBy + nSortBy, -1); // Initialize Sort By Array
       }
       else if (isViewCmd)
-      { // It's View Clients Command. Initialize viewClients Sruct
+      { // It's View Clients Command. Initialize viewClients Struct
         viewClientsCmd = ViewClientsCmd();
         fill(viewClientsCmd.sortBy, viewClientsCmd.sortBy + nSortBy, -1); // Initialize Sort By Array
       }
       else if (isMovieData)
-      { // It's Filter Movies Command. Initialize filterMovies Sruct
+      { // It's Filter Movies Command. Initialize filterMovies Struct
         filterMoviesCmd = FilterMoviesCmd();
         for (int i = 0; i < movieFieldEnd - 1; i++)
           fill(filterMoviesCmd.params[i], filterMoviesCmd.params[i] + maxParamPerSubCmd, "null"); // Initialize Params to Filter Array
@@ -248,7 +249,7 @@ int main(int argc, char **argv)
               else
                 index.param = isCharOnArray(tolower(cmd.param), clientFieldCmdsChar, clientFieldEnd - 1);
 
-              if (index.param == -1) // Wrong Sort By Command Parameter
+              if (index.param == -1 || (isMovieData && !movieValidFieldsToSort[index.param]) || (!isMovieData && !clientValidFieldsToSort[index.param])) // Wrong Sort By Command Parameter
                 throw(wrongSortByParam);
 
               // If the Character is Uppercase, Increase the Index by One to Match with the Descending Order Command Index
@@ -266,7 +267,10 @@ int main(int argc, char **argv)
               else
                 overwriteSortByParam(&searchClientsCmd, &sortByCounter, sortByOrder, index.param);
             }
-            continue;
+
+            if (sortByCounter != 0)
+              continue;
+            break;
           }
 
           if (!getline(stream, inputWord, ' '))
@@ -442,11 +446,26 @@ int main(int argc, char **argv)
     case cmdSearchClients:
       searchClients(&clients, searchClientsCmd.paramsPtr, searchClientsCmd.sortBy);
       break;
+    case cmdDisplayRentedMovies:
+      displayRentedMovies(&movies);
+      break;
+    case cmdClientRentedMovies:
+      clientRentedMovies();
+      break;
     case cmdAddMovie:
       addMovie(&movies);
       break;
     case cmdRentMovie:
       rentMovie(&movies, &clients);
+      break;
+    case cmdReturnMovie:
+      returnMovie(&movies, &clients);
+      break;
+    case cmdRemoveMovie:
+      removeMovie(&movies);
+      break;
+    case cmdRemoveClient:
+      removeClient(&movies, &clients);
       break;
     case cmdMovieStatus:
       getMovieStatus(&movies);
@@ -500,13 +519,18 @@ void helpMessage()
   cout << "Database Manipulation Commands\n"
        << tab1 << addBrackets(cmdsChar[cmdAddMovie]) << " Add Movie\n"
        << tab1 << addBrackets(cmdsChar[cmdRentMovie]) << " Rent Movie\n"
+       << tab1 << addBrackets(cmdsChar[cmdReturnMovie]) << " Return Movie\n"
        << tab1 << addBrackets(cmdsChar[cmdAddClient]) << " Add Client\n"
+       << tab1 << addBrackets(cmdsChar[cmdRemoveMovie]) << " Remove Movie\n"
+       << tab1 << addBrackets(cmdsChar[cmdRemoveClient]) << " Remove Client\n"
        << "Database Search Commands:\n"
        << tab1 << addBrackets(cmdsChar[cmdMovieStatus]) << " Movie Status\n"
        << tab1 << addBrackets(cmdsChar[cmdViewMovies]) << " View Movies\n"
        << tab1 << addBrackets(cmdsChar[cmdFilterMovies]) << " Filter Movies\n"
        << tab1 << addBrackets(cmdsChar[cmdViewClients]) << " View Clients\n"
        << tab1 << addBrackets(cmdsChar[cmdSearchClients]) << " Search Client\n"
+       << tab1 << addBrackets(cmdsChar[cmdDisplayRentedMovies]) << " Display Rented Movies\n"
+       << tab1 << addBrackets(cmdsChar[cmdClientRentedMovies]) << " Display Client Rented Movies\n"
        << "Command Parameters:\n"
        << tab1 << addBrackets(cmdsChar[cmdSortByParameters]) << " Sort By Parameters\n"
        << tab1 << addBrackets(cmdsChar[cmdMovieParameters]) << " Movie Field Parameters\n"
@@ -555,41 +579,46 @@ void changeCwdToData()
 void checkCmd(bool isViewCmd, string input, bool *moreInput, bool *isField)
 {
   bool isCmd = input[0] == '-';
+  bool isFieldCommand = isCmd && input[1] == '-';
   int inputLength = input.length();
 
   if (isViewCmd)
   {
-    if (isCmd && inputLength < 3 && inputLength > 0) // It's a Subcommand
+    if (isCmd) // It's a Subcommand
       *moreInput = true;
-    else if (!isCmd && inputLength > 0) // It's a Field Parameter
+    else // It's a Field Parameter
       *isField = true;
   }
-  else if (isCmd)        // Got a Command
-    if (inputLength < 3) // It's a Subcommand
-      *moreInput = true;
-    else if (inputLength > 2) // It's a Field Parameter
-      *isField = true;
+  else if (isCmd && !isFieldCommand) // It's a Subcommand
+    *moreInput = true;
+  else if (isFieldCommand) // It's a Field Parameter
+    *isField = true;
 }
 
 // --- Extern Variables and Constants Assignment
 
 int cmdsChar[cmdEnd] = { // Commands Character
     [cmdAddMovie] = 'a',
-    [cmdRentMovie] = 'r',
     [cmdMovieStatus] = 's',
+    [cmdRentMovie] = 'r',
+    [cmdReturnMovie] = 'R',
+    [cmdRemoveMovie] = 'm',
+    [cmdAddClient] = 'A',
+    [cmdRemoveClient] = 'c',
     [cmdViewMovies] = 'v',
     [cmdFilterMovies] = 'f',
     [cmdViewClients] = 'V',
     [cmdSearchClients] = 'F',
-    [cmdMovieParameters] = 'm',
-    [cmdClientParameters] = 'c',
+    [cmdDisplayRentedMovies] = 'd',
+    [cmdClientRentedMovies] = 'D',
+    [cmdMovieParameters] = 'M',
+    [cmdClientParameters] = 'C',
     [cmdSortByParameters] = 'S',
     [cmdGenres] = 'G',
     [cmdHowToUseViewMovies] = 'w',
     [cmdHowToUseFilterMovies] = 'x',
     [cmdHowToUseViewClients] = 'y',
     [cmdHowToUseSearchClients] = 'z',
-    [cmdAddClient] = 'A',
     [cmdHelp] = 'h',
     [cmdExit] = 'e'};
 
@@ -602,11 +631,11 @@ int movieFieldCmdsChar[movieFieldEnd] = { // Movie Fields Command Character
     [movieFieldName] = 't',
     [movieFieldDirector] = 'd',
     [movieFieldGenre] = 'g',
-    [movieFieldDuration] = 'D',
+    [movieFieldDuration] = 'm',
     [movieFieldPrice] = 'p',
     [movieFieldRelease] = 'r',
     [movieFieldStatus] = 's',
-    [movieFieldRentOn] = 'R',
+    [movieFieldRentOn] = 'o',
     [movieFieldRentTo] = 'c',
     [movieFieldAll] = '.'};
 
@@ -618,10 +647,23 @@ char *movieFieldCmdsStr[movieFieldEnd] = { // Movie Fields Name
     [movieFieldDuration] = "Min",
     [movieFieldPrice] = "Price",
     [movieFieldRelease] = "Release",
-    [movieFieldStatus] = "Rent Status",
+    [movieFieldStatus] = "Rented",
     [movieFieldRentOn] = "Rent On",
     [movieFieldRentTo] = "Rent To",
     [movieFieldAll] = "All"};
+
+bool movieValidFieldsToSort[movieFieldEnd] = { // Fields that can be Used in Sort By Movies Subcommand
+    [movieFieldId] = true,
+    [movieFieldName] = true,
+    [movieFieldDirector] = true,
+    [movieFieldGenre] = false,
+    [movieFieldDuration] = true,
+    [movieFieldPrice] = true,
+    [movieFieldRelease] = true,
+    [movieFieldStatus] = true,
+    [movieFieldRentOn] = true,
+    [movieFieldRentTo] = true,
+    [movieFieldAll] = false};
 
 bool movieValidFieldsToFilter[movieFieldEnd] = { // Fields that can be Used in Filter Movies Command
     [movieFieldId] = true,
@@ -649,6 +691,13 @@ char *clientFieldCmdsStr[clientFieldEnd] = { // Client Fields Name
     [clientFieldName] = "Name",
     [clientFieldPhoneNumber] = "Phone Number",
     [clientFieldAll] = "All"};
+
+bool clientValidFieldsToSort[clientFieldEnd] = { // Fields that can be Used in Sort By Clients Subcommand
+    [clientFieldAccountNumber] = true,
+    [clientFieldId] = true,
+    [clientFieldName] = true,
+    [clientFieldPhoneNumber] = true,
+    [clientFieldAll] = false};
 
 bool clientValidFieldsToFilter[clientFieldEnd] = { // Fields that can be Used in Filter Clients Command
     [clientFieldAccountNumber] = true,

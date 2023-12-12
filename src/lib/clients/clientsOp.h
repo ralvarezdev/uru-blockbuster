@@ -5,6 +5,7 @@
 
 using namespace clients;
 using namespace commands;
+using namespace movies;
 
 #ifndef CLIENTS_H
 #define CLIENTS_H
@@ -12,11 +13,13 @@ using namespace commands;
 // --- Functions
 clientStatus getClientId(Clients *clients, int *id, int *index, string message);
 void getClients(Clients *clients);
+void overwriteClients(Clients *clients);
 void addClientToFile(Clients *clients);
 void createClientWithId(Clients *clients, Client newClient, int *index);
 void filterClientsData(Clients *clients, string **params, bool fields[], int sortBy[]);
 void sortClients(Clients *clients, int sortBy[], int n);
 void clientsMergeSort(Clients *clients, int sortByIndex);
+void storeMovieMovement(string time, int clientId, int movieId, bool isRent);
 
 // Function to Check if Client Unique Fields have been Ocuppied
 template <typename T>
