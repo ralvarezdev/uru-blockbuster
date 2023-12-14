@@ -59,25 +59,29 @@ Only C++.
 <strong>For a Better User Experience, Resize the Terminal Window to Fullscreen</strong>
 
 # Main Menu
-![Screenshot (769)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/d1355dc3-ec22-4cbd-bcc3-eed77c21761e)
+![Screenshot (942)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/c6752013-1ccf-4bbd-9f6a-8292a630d209)
 
 # Commands
 This is the Full List of Commands for Each Action in the Program
 
 # Parameters
-![Screenshot (770)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/cc3a5ca7-3482-49d3-b71c-0fc9e8cfdd59)
 
-![Screenshot (771)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/6a4676f8-b499-46bf-9991-9a45ecbcefa3)
+![Screenshot (910)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/d54ff36b-f7db-4977-abef-120e37a2ea70)
 
-![Screenshot (772)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/20e76420-4aaf-4cd6-a98b-8532a220bf3d)
+![Screenshot (911)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/8fbf9b9c-f8ae-4be5-8da8-fa682cbbf92a)
 
-![Screenshot (773)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/dc776d15-ec4d-42c4-bf90-43ea0593f9b6)
+![Screenshot (912)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/a8070b60-02d7-4e09-988d-e5b54e1107f7)
+
+![Screenshot (913)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/ba759acc-8707-46b7-8d7d-25ea724913c9)
 
 # View Movies Command Examples
-![Screenshot (774)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/fa724ec9-876f-46cf-bbf9-7942c32ad744)
+![Screenshot (905)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/ffdd1479-94dc-4fd3-b8fd-6802297285a7)
 
 # Filter Movies Command Examples
-![Screenshot (775)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/f28ffbb4-9ad6-4978-a49a-c687cac72e09)
+![Screenshot (906)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/942685c6-b9dd-4413-918b-9ae6a854439f)
 
-# Filter Clients Command Examples
-![Screenshot (776)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/3a1e2aa0-ef9d-4732-8432-fa1a461a6267)
+# View Clients Command Examples
+![Screenshot (907)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/b8018392-28f1-405c-a670-6a4329a07d76)
+
+# Search Clients Command Examples
+![Screenshot (908)](https://github.com/ralvarezdev/ProyectoTeoria_RR/assets/86166683/b053d443-5842-44ba-9a88-7fd79a916174)

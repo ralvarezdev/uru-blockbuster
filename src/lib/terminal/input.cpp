@@ -84,22 +84,40 @@ void wrongCommand(cmdStatus cmdStatus)
       message.append("No Command");
     else
       message.append((cmdStatus == wrongMainCmd) ? "Wrong Main Command" : "Wrong Subcommand");
+
     message.append(". Press ENTER to Display Help Message");
     break;
   case wrongViewMoviesCmd:
   case wrongFilterMoviesCmd:
-  case wrongViewClientsCmd: // TO ADD MESSAGE
+    if (cmdStatus == wrongViewMoviesCmd)
+      message.append("Wrong View Movies Command");
+    else
+      message.append("Wrong Filter Movies Command");
+
+    message.append(". Press ENTER to Display Command Examples");
+    break;
+  case wrongViewClientsCmd:
   case wrongSearchClientsCmd:
-  case wrongSortByParam:
+    if (cmdStatus == wrongViewClientsCmd)
+      message.append("Wrong View Clients Command");
+    else
+      message.append("Wrong Search Clients Command");
+
+    message.append(". Press ENTER to Display Command Examples");
+    break;
   case wrongMovieFieldParam:
   case wrongMovieField:
-  case wrongClientField: // TO ADD MESSAGE
+  case wrongClientField:
   case wrongClientFieldParam:
-    if (cmdStatus == wrongFilterMoviesCmd || cmdStatus == wrongViewMoviesCmd || cmdStatus == wrongSearchClientsCmd)
-      message.append("Wrong Command");
-    else if (cmdStatus == wrongSortByParam || cmdStatus == wrongMovieFieldParam || cmdStatus == wrongMovieField || wrongClientFieldParam)
-      message.append((cmdStatus == wrongSortByParam) ? "Wrong Sort By Parameter" : "Wrong Field");
-    message.append(". Press ENTER to Display Search Data Parameters Message");
+    if (cmdStatus == wrongMovieFieldParam || cmdStatus == wrongMovieField)
+      message.append("Wrong Movie Field");
+    else
+      message.append("Wrong Client Field");
+
+    message.append(". Press ENTER to Display Valid Field Parameters");
+    break;
+  case wrongSortByParam:
+    message.append("Wrong Sort By Parameter. Press ENTER to Display Sort By Parameters Message");
     break;
   }
   pressEnterToCont(message, true);
@@ -108,7 +126,7 @@ void wrongCommand(cmdStatus cmdStatus)
 // Function to Check if the Movie Data Typed by the User is Correct
 void wrongMovieData(invalidMovie wrongData)
 {
-  string message = "Invalid: Movie ";
+  string message = "Invalid Movie ";
 
   switch (wrongData)
   {
@@ -137,7 +155,7 @@ void wrongMovieData(invalidMovie wrongData)
 // Function to Check if the Client Data Typed by the User is Correct
 void wrongClientData(invalidClient wrongData)
 {
-  string message = "Invalid: Client ";
+  string message = "Invalid Client ";
 
   switch (wrongData)
   {
@@ -192,7 +210,6 @@ int getInteger(string message, int low, int high)
 
       pressEnterToCont(stream.str(), true);
     }
-  assert(stoi(temp) == -1); // Function Must Not Get to this Assert
 }
 
 // Function to Ask for a Double Input
@@ -209,7 +226,6 @@ double getDouble(string message, double low, double high, int precision)
       amount = stod(temp);
 
       if (amount > low && amount <= high)
-
         return amount;
     }
     catch (...)
@@ -221,7 +237,6 @@ double getDouble(string message, double low, double high, int precision)
 
       pressEnterToCont(stream.str(), true);
     }
-  assert(stoi(temp) == -1); // Function Must Not Get to this Assert
 }
 
 // Function to Get a Lowercase String

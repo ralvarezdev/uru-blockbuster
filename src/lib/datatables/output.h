@@ -14,7 +14,7 @@ using namespace terminal;
 
 // --- Functions
 void printExamples(cmdExplanation examples[], int n);
-void printDate(int date[], bool rightJustified);
+void printDate(int date[]);
 void printMovieInfo(Movie movie);
 void printMovies(Movies *movies, bool *fields);
 void printClientInfo(Client client, bool censoreInfo);
@@ -22,8 +22,9 @@ void printClients(Clients *clients, bool *fields);
 
 // --- Templates
 
-// Template to Convert Float to String with a Set Precision of N Digits
 template <typename T>
+
+// Template to Convert Floats or Doubles to String with a Set Precision of N Digits
 string toStringWithPrecision(T number, int precision)
 {
   ostringstream stream;
@@ -31,8 +32,9 @@ string toStringWithPrecision(T number, int precision)
   return stream.str();
 }
 
-// Template to Print a 1D Array
 template <typename T, typename L>
+
+// Template to Print a 1D Array
 void printArray(T *params, int n, L paramTitle)
 {
   string param;
@@ -61,8 +63,9 @@ void printArray(T *params, int n, L paramTitle)
   cout << "\n\n";
 }
 
-// Template to Print a 2D Data Table
 template <typename T, typename L>
+
+// Template to Print a 2D Data Table
 void print2DArray(T **params, int m, int n, L paramsTitle[])
 {
   for (int i = 0; i < m; i++)

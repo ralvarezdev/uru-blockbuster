@@ -21,8 +21,9 @@ extern char *genreStr[], *movieFieldCmdsStr[], *clientFieldCmdsStr[];
 
 // --- Function Prototypes
 void printExamples(cmdExplanation examples[], int n);
-void printDate(int date[], bool rightJustified);
-void addDateToStream(int date[], bool rightJustified, ostringstream *stream);
+void printMessageMaxPerLine(string message, int nCharLine);
+void printDate(int date[]);
+void addDateToStream(int date[], ostringstream *stream);
 void printMovies(Movies *movies, bool *fields);
 void printMovieInfo(Movie movie);
 void printClientInfo(Client client, bool censoreInfo);
@@ -35,52 +36,49 @@ void printExamples(cmdExplanation examples[], int n)
 {
   const int nCharLine = nChar - tab1.length(); // Number of Characters for Each Line
 
-  int printedChar, messageLength; // Number of Characters Printed in the Current Line and the Length of Message String
-  string message;                 // Temp Data
-
   cout << clear;                                             // Clear Terminal
-  printTitle("Examples", applyBgColor, applyFgColor, false); // Examples of the Usage of the Search Command
+  printTitle("Examples", applyBgColor, applyFgColor, false); // Usage Examples of the Search Command
   for (int i = 0; i < n; i++)
   {
-    printedChar = 0;
-
-    for (int j = 0; j < examples[i].cmd.length(); j += nCharLine)
-    {
-      message = examples[i].cmd.substr(j, nCharLine + j);
-      assert(message.length() <= nCharLine); // Check message String Length
-
-      cout << '\n'
-           << tab1 << message << '\n';
-    }
-
-    cout << tab1 << string(nCharTitle, '-') << '\n';
-
-    stringstream stream(examples[i].explanation); // To Print the Message with New Line each time it Reaches nCharLine
-
-    while (getline(stream, message, ' '))
-    {
-      messageLength = message.length();
-
-      if (printedChar + messageLength >= nCharLine)
-      { // Exceeds the Maximum Number of Characters per Line
-        cout << '\n'
-             << tab1 << message;
-        printedChar = messageLength;
-        continue;
-      }
-
-      if (printedChar != 0)
-      {
-        cout << ' ' << message;
-        printedChar++;
-      }
-      else
-        cout << tab1 << message;
-
-      printedChar += messageLength;
-    }
     cout << '\n';
+    printMessageMaxPerLine(examples[i].cmd, nCharLine);
+    cout << tab1 << string(nCharTitle, '-') << '\n'; // Separator
+
+    printMessageMaxPerLine(examples[i].explanation, nCharLine);
   }
+}
+
+// Function to Print Messages with New Line each time it Reaches nCharLine
+void printMessageMaxPerLine(string message, int nCharLine)
+{
+  string content;
+  int printedChar = 0, contentLength; // Number of Characters Printed in the Current Line and the Length of Content String
+
+  stringstream stream(message); // Stream Message
+
+  while (getline(stream, content, ' '))
+  {
+    contentLength = content.length();
+
+    if (printedChar + contentLength >= nCharLine) // Exceeds the Maximum Number of Characters per Line
+    {
+      cout << '\n'
+           << tab1 << content;
+      printedChar = contentLength;
+      continue;
+    }
+
+    if (printedChar != 0)
+    {
+      cout << ' ' << content;
+      printedChar++;
+    }
+    else
+      cout << tab1 << content;
+
+    printedChar += contentLength;
+  }
+  cout << '\n';
 }
 
 // Function to Print Movie Info
@@ -90,57 +88,65 @@ void printMovieInfo(Movie movie)
   int nCharContent = nChar - nCharField;
   string fieldTitle;
 
+  ostringstream stream;
+
   printTitle("Movie Info", applyBgColor, applyFgColor, false);
 
-  cout << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldId] << movie.id << '\n'; // Print Id
+  stream << left
+         << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldId] << movie.id << '\n'; // Print ID
 
-  cout << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldName]; // Print Title
+  stream << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldName]; // Print Title
   if (movie.name.length() < nCharContent)
-    cout << setw(nCharContent) << setfill(' ') << movie.name << '\n';
+    stream << setw(nCharContent) << setfill(' ') << movie.name << '\n';
   else
-    cout << movie.name.substr(0, nCharContent - 4) << "... " << '\n';
+    stream << movie.name.substr(0, nCharContent - 4) << "... " << '\n';
 
-  cout << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldGenre]; // Print Genres
+  stream << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldGenre]; // Print Genres
   for (int i = 0; i < nMaxGenres && movie.genres[i] != -1; i++)
     if (i != 0)
-      cout << ", " << genreStr[movie.genres[i]];
+      stream << ", " << genreStr[movie.genres[i]];
     else
-      cout << genreStr[movie.genres[i]];
+      stream << genreStr[movie.genres[i]];
+  stream << '\n';
 
-  cout << '\n'
-       << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldDirector] << movie.director << '\n' // Print Director
-       << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldDuration] << movie.duration << '\n' // Print Duration
-       << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldPrice] << movie.price << '\n'       // Print Price
-       << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldRelease];
-  printDate(movie.releaseDate, false); // Print Release Date
-  cout << '\n';
+  stream << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldDirector] << movie.director << '\n' // Print Director
+         << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldDuration] << movie.duration << '\n' // Print Duration
+         << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldPrice] << movie.price << '\n'       // Print Price
+         << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldRelease];
+  addDateToStream(movie.releaseDate, &stream); // Print Release Date
+  stream << '\n';
 
-  cout << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldStatus]; // Print Rent Status
+  stream << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldStatus]; // Print Rent Status
   if (!rented)
-    cout << "No" << '\n';
+    stream << "No" << '\n';
   else
   {
-    cout << "Yes" << '\n'
-         << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldRentTo] << movie.rentTo << '\n' // Print Client Id that Rented the Movie
-         << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldRentOn];                        // Print Rent On Date
-    printDate(movie.rentOn, false);
-    cout << '\n';
+    stream << "Yes" << '\n'
+           << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldRentTo] << movie.rentTo << '\n' // Print Client ID that Rented the Movie
+           << setw(nCharField) << setfill(' ') << movieFieldCmdsStr[movieFieldRentOn];                        // Print Rent On Date
+    addDateToStream(movie.rentOn, &stream);
+    stream << '\n';
   }
+  cout << stream.str();
 }
 
 // Function to Print Movies
 void printMovies(Movies *movies, bool *fields)
 {
+  // Print Movies
+  ostringstream stream;
+  Movie movie;
+
   const int nPerGenre = 3;                    // Number of Characters Per Genre
-  const int nId = 5;                          // ... for Id
+  const int nId = 7;                          // ... for ID
   const int nDuration = 4;                    // ... for Duration
   const int nPrice = 8;                       // ... for Price
   const int nGenre = (nPerGenre + 1) * 4 + 1; // ... for Genres
   const int nStatus = 7;                      // ... for Rent Status
-  const int nRentTo = 8;                      // ... for Rent to Client (Id)
+  const int nRentTo = 8;                      // ... for Rent to Client (ID)
   const int nDirector = 15;                   // ... for Director Name
 
-  int nTitle = nChar; // Decrease the Number of Characters Used by the Title Field
+  int nTitle = nChar; // Decrease the Number of Characters Used by Title Field
   int n = movieFieldEnd - 1;
 
   int fieldsNChar[n] = {nId, 0, nDirector, nGenre, nDuration, nPrice,
@@ -153,31 +159,26 @@ void printMovies(Movies *movies, bool *fields)
   assert(nTitle > 0);                   // Check nName
   fieldsNChar[movieFieldName] = nTitle; // Assign Number of Characters for Movie's Name
 
-  cout << clear << sgrBgCmd << sgrFgCmd;
+  stream << clear << sgrBgCmd << sgrFgCmd << left;
   for (int i = 0; i < n; i++)
     if (fields[i])
-      cout << setw(fieldsNChar[i]) << setfill(' ') << movieFieldCmdsStr[i]; // Field Title
-  cout << reset << '\n';
+      stream << setw(fieldsNChar[i]) << setfill(' ') << movieFieldCmdsStr[i]; // Field Title
+  stream << reset << '\n';
 
-  if ((*movies).getNumberMovies() == 0) // No Clients
+  if ((*movies).getNumberMovies() == 0) // No Movies
   {
-    cout << string(nChar, '-') << "\n\n";
+    stream << string(nChar, '-') << '\n';
+    cout << stream.str();
     return; // End this Function
   }
 
-  // Print Movies
-  int *date;
-
-  ostringstream stream;
-  Movie movie;
   stream << left;
-
   for (int i = 0; i < (*movies).getNumberMovies(); i++)
   {
     // Get Movie
     movie = (*movies).getMovie(i);
 
-    // Movie Id
+    // Movie ID
     if (fields[movieFieldId])
       stream << setw(nId) << setfill(' ') << movie.id;
 
@@ -236,7 +237,7 @@ void printMovies(Movies *movies, bool *fields)
 
     // Movie Release Date
     if (fields[movieFieldRelease])
-      addDateToStream(movie.releaseDate, true, &stream);
+      addDateToStream(movie.releaseDate, &stream);
 
     // Movie Rent Status
     if (fields[movieFieldStatus])
@@ -245,7 +246,7 @@ void printMovies(Movies *movies, bool *fields)
       else
       {
         stream << setw(nStatus) << setfill(' ') << "Yes";
-        addDateToStream(movie.rentOn, true, &stream);
+        addDateToStream(movie.rentOn, &stream);
         stream << setw(nRentTo) << setfill(' ') << left << movie.rentTo;
       }
     stream << '\n';
@@ -254,66 +255,64 @@ void printMovies(Movies *movies, bool *fields)
 }
 
 // Function to Print Dates
-void printDate(int date[], bool rightJustified)
+void printDate(int date[])
 {
-  if (rightJustified)
-    cout << right;
-
-  cout << setw(nYear) << setfill('0') << date[0] << '-'
+  cout << right
+       << setw(nYear) << setfill('0') << date[0] << '-'
        << setw(nMonth) << setfill('0') << date[1] << '-'
-       << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ');
-
-  if (rightJustified)
-    cout << left;
+       << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ')
+       << left;
 }
 
 // Function to Add Dates to ostringstream
-void addDateToStream(int date[], bool rightJustified, ostringstream *stream)
+void addDateToStream(int date[], ostringstream *stream)
 {
-  if (rightJustified)
-    *stream << right;
-
-  *stream << setw(nYear) << setfill('0') << date[0] << '-'
+  *stream << right
+          << setw(nYear) << setfill('0') << date[0] << '-'
           << setw(nMonth) << setfill('0') << date[1] << '-'
-          << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ');
-
-  if (rightJustified)
-    *stream << left;
+          << setw(nDay) << setfill('0') << date[2] << string(nSep, ' ')
+          << left;
 }
 
 // Function to Print Client Info
 void printClientInfo(Client client, bool censoreInfo)
 {
   string name = client.name; // Client Name
-
   int nCharContent = nChar - nCharField;
+
+  ostringstream stream;
 
   printTitle("Client Info", applyBgColor, applyFgColor, false);
 
-  cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldAccountNumber] << client.account << '\n'; // Print Client Id
+  stream << left
+         << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldAccountNumber] << client.account << '\n'; // Print Client ID
 
-  cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldId] << client.id << '\n'; // Print Client Id
+  stream << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldId] << client.id << '\n'; // Print Client ID
 
-  cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldName]; // Print Client Name
+  stream << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldName]; // Print Client Name
   if (name.length() < nCharContent)
-    cout << setw(nCharContent) << setfill(' ') << name << '\n';
+    stream << setw(nCharContent) << setfill(' ') << name << '\n';
   else
-    cout << name.substr(0, nCharContent - 4) << "... " << '\n';
+    stream << name.substr(0, nCharContent - 4) << "... " << '\n';
 
   if (!censoreInfo)
   {
-    cout << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldPhoneNumber] // Print Client Phone Number
-         << setw(nCharContent) << setfill(' ') << toStringWithPrecision(client.phoneNumber, 0) << '\n';
+    stream << setw(nCharField) << setfill(' ') << clientFieldCmdsStr[clientFieldPhoneNumber] // Print Client Phone Number
+           << setw(nCharContent) << setfill(' ') << toStringWithPrecision(client.phoneNumber, 0) << '\n';
   }
+  cout << stream.str();
 }
 
 // Function to Print Clients
 void printClients(Clients *clients, bool *fields)
 {
+  // Print Clients
+  ostringstream stream;
+  Client client;
   string name; // Client Name
 
-  const int nAccountNumber = 20; // ... for Account Number
-  const int nId = 15;            // Number of Characters for Id
+  const int nAccountNumber = 20; // Number of Characters for Account Number
+  const int nId = 15;            // ... for ID
   const int nPhoneNumber = 15;   // ... for Phone Number
 
   int nName = nChar; // Decrease the Number of Characters Used by the Name Field
@@ -328,24 +327,19 @@ void printClients(Clients *clients, bool *fields)
   assert(nName > 0); // Check nName
   fieldsNChar[clientFieldName] = nName;
 
-  cout << clear << sgrBgCmd << sgrFgCmd;
+  stream << clear << sgrBgCmd << sgrFgCmd << left;
   for (int i = 0; i < n; i++)
     if (fields[i])
-      cout << setw(fieldsNChar[i]) << setfill(' ') << clientFieldCmdsStr[i]; // Field Title
-  cout << reset << '\n';
+      stream << setw(fieldsNChar[i]) << setfill(' ') << clientFieldCmdsStr[i]; // Field Title
+  stream << reset << '\n';
 
   if ((*clients).getNumberClients() == 0) // No Clients
   {
-    cout << string(nChar, '-') << "\n\n";
+    stream << string(nChar, '-') << '\n';
+    cout << stream.str();
     return; // End this Function
   }
 
-  // Print Clients
-  string temp;
-
-  ostringstream stream;
-  Client client;
-  stream << left;
   for (int i = 0; i < (*clients).getNumberClients(); i++)
   {
     client = (*clients).getClient(i); // Get Client
@@ -355,7 +349,7 @@ void printClients(Clients *clients, bool *fields)
     if (fields[clientFieldAccountNumber])
       stream << setw(nAccountNumber) << setfill(' ') << client.account;
 
-    // Client Id
+    // Client ID
     if (fields[clientFieldId])
       stream << setw(nId) << setfill(' ') << client.id;
 

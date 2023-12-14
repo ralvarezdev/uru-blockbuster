@@ -39,7 +39,7 @@ void removeClient(Movies *movies, Clients *clients);
 void viewMovies(Movies *movies, bool fields[], int sortBy[]);
 void filterMovies(Movies *movies, string **params, int sortBy[]);
 void displayRentedMovies(Movies *movies);
-void clientRentedMovies();
+void clientRentedMovies(Clients *clients);
 void getMovieStatus(Movies *movies);
 void viewClients(Clients *clients, bool fields[], int sortBy[]);
 void searchClients(Clients *clients, string **params, int sortBy[]);
@@ -87,7 +87,7 @@ void addMovie(Movies *movies)
 // Function to Rent Movie
 void rentMovie(Movies *movies, Clients *clients)
 {
-  Client client = Client();
+  Client client;
   int movieId, movieIndex, clientId, clientIndex, nMoviesRead = (*movies).getNumberMovies(), nClientsRead = (*clients).getNumberClients();
   int date[3];
   clientStatus clientStatus;
@@ -100,7 +100,7 @@ void rentMovie(Movies *movies, Clients *clients)
   cout << '\n';
   movieStatus = getMovieId(movies, &movieId, &movieIndex, "Movie ID to Rent"); // Get Movie ID
 
-  assert(movieId > 0); // Check Movie Id
+  assert(movieId > 0); // Check Movie ID
 
   cout << '\n';
   if (movieStatus == movieNotFound)
@@ -140,8 +140,8 @@ void rentMovie(Movies *movies, Clients *clients)
       createClientWithId(clients, client, &clientIndex);
       break;
     }
-    else if (getClientRent(movies, clientId, &movieId) == movieRented)
-    { // Check if the Client has Already a Rent
+    else if (getClientRent(movies, clientId, &movieId) == movieRented) // Check if the Client has Already a Rent
+    {
       message = "Error: Client Hasn't Returned Some Movies";
       pressEnterToCont(message, true);
       return; // End this Function
@@ -159,7 +159,7 @@ void rentMovie(Movies *movies, Clients *clients)
     }
   }
 
-  assert(clientId > 0 && clientIndex >= 0); // Check Client Id and Index
+  assert(clientId > 0 && clientIndex >= 0); // Check Client ID and Index
 
   moviesMergeSort(movies, movieFieldId * 2);
   (*movies).rentMovie(clientId, movieIndex); // Rent Movie
@@ -190,7 +190,7 @@ void returnMovie(Movies *movies, Clients *clients)
     cout << '\n';
     clientStatus = getClientId(clients, &clientId, &clientIndex, "Client ID"); // Get Client ID
 
-    assert(clientId > 0); // Check Client Id
+    assert(clientId > 0); // Check Client ID
 
     cout << '\n';
     if (clientStatus == clientNotFound)
@@ -211,15 +211,15 @@ void returnMovie(Movies *movies, Clients *clients)
   movieStatus = getClientRent(movies, clientId, &movieId); // Get Movie Rent ID
 
   cout << '\n';
-  if (movieStatus != movieRented)
-  { // Client doesn't have Any Movie Rented
+  if (movieStatus != movieRented) // Client doesn't have Any Movie Rented
+  {
     pressEnterToCont("Error 404:Client doesn't have Any Rent", true);
     return; // End this Function
   }
 
   checkMovie(movies, movieId, &movieIndex); // Get Movie Index
 
-  assert(movieId > 0 && movieIndex >= 0); // Check Movie Id and Index
+  assert(movieId > 0 && movieIndex >= 0); // Check Movie ID and Index
 
   movie = (*movies).getMovie(movieIndex); // Get Movie
   printMovieInfo(movie);
@@ -251,15 +251,15 @@ void removeMovie(Movies *movies)
   cout << '\n';
   check = getMovieId(movies, &id, &index, "Movie ID");
 
-  if (check == movieNotFound)
-  {                                // The Id hasn't been Added to that File
-    assert(id > 0 && index == -1); // Check Movie Id and Index
+  if (check == movieNotFound) // The ID hasn't been Added to that File
+  {
+    assert(id > 0 && index == -1); // Check Movie ID and Index
     cout << '\n';
     pressEnterToCont("Error 404: Movie Not Found. Run \"Add Movie Command\"", true);
     return; // End this Function
   }
 
-  assert(id > 0 && index >= 0); // Check Movie Id and Index
+  assert(id > 0 && index >= 0); // Check Movie ID and Index
 
   cout << '\n';
   printMovieInfo((*movies).getMovie(index)); // Print Movie Info
@@ -308,7 +308,7 @@ movieStatus getClientRent(Movies *movies, int clientId, int *movieId)
     mid = startA + (endA - startA) / 2;
     movie = (*movies).getMovie(mid);
 
-    if (movie.rentTo == clientId)
+    if (movie.rentStatus && movie.rentTo == clientId)
     {
       *movieId = movie.id;
       break;
@@ -319,7 +319,7 @@ movieStatus getClientRent(Movies *movies, int clientId, int *movieId)
       endA = mid - 1;
   }
 
-  return (*movieId == movie.id) ? movieRented : movieNotFound;
+  return (clientId == movie.rentTo) ? movieRented : movieNotFound;
 }
 
 // Function to Remove Client from clients.bin
@@ -335,9 +335,9 @@ void removeClient(Movies *movies, Clients *clients)
   cout << '\n';
   check = getClientId(clients, &clientId, &index, "Client ID");
 
-  if (check == clientNotFound)
-  {                                      // The Id hasn't been Added to that File
-    assert(clientId > 0 && index == -1); // Check Client Id and Index
+  if (check == clientNotFound) // The ID hasn't been Added to that File
+  {
+    assert(clientId > 0 && index == -1); // Check Client ID and Index
     cout << '\n';
     pressEnterToCont("Error 404: Client Not Found. Run \"Add Client Command\"", true);
     return; // End this Function
@@ -348,7 +348,7 @@ void removeClient(Movies *movies, Clients *clients)
     return; // End this Function
   }
 
-  assert(clientId > 0 && index >= 0); // Check Client Id and Index
+  assert(clientId > 0 && index >= 0); // Check Client ID and Index
 
   cout << '\n';
   printClientInfo((*clients).getClient(index), true); // Print Client Info
@@ -402,6 +402,7 @@ void viewMovies(Movies *movies, bool fields[], int sortBy[])
   sortMovies(movies, sortBy, movieFieldEnd - 1); // Sort Movies
   printMovies(movies, fields);                   // Print Movies
 
+  cout << '\n';
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
@@ -429,6 +430,7 @@ void filterMovies(Movies *movies, string **params, int sortBy[])
   pressEnterToCont("Press ENTER to Continue", false);
 
   filterMoviesData(movies, params, fields, sortBy); // Filter Movies
+
   cout << '\n';
   pressEnterToCont("Press ENTER to Continue", false);
 }
@@ -476,9 +478,6 @@ void displayRentedMovies(Movies *movies)
   message = "Number of Coincidences: ";
   message.append(to_string(counter));
 
-  if (counter == 0)
-    cout << string(nChar, '-') << '\n';
-
   cout << '\n';
   printTitle(message, applyBgColor, applyFgColor, (counter == 0) ? true : false); // Print Number of Coincidences
 
@@ -488,7 +487,107 @@ void displayRentedMovies(Movies *movies)
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
-void clientRentedMovies() { cout << "to develop"; }
+// Function to Print Client Movie Rent History
+void clientRentedMovies(Clients *clients)
+{
+  clientStatus check;
+  bool isClient;
+  int clientId, movieId, tempId, count, movCounter = 0, index = -1, date[3];
+  string line, word;
+
+  const int nMovieId = 20; // Number of Characters for Movie ID
+  const int nType = 20;    // ... for Movement Type
+
+  int fieldsNChar[3] = {nMovieId, nType, nChar - nMovieId - nType}; // Separators Character Size
+  string rentTitle[3] = {"Movie ID", "Movement", "Date"};
+
+  cout << clear;
+  printTitle("Client Rent History", applyBgColor, applyFgColor, false);
+
+  cout << '\n';
+  check = getClientId(clients, &clientId, &index, "Client ID");
+
+  if (check == clientNotFound) // The ID hasn't been Added to that File
+  {
+    assert(clientId > 0 && index == -1); // Check Client ID and Index
+    cout << '\n';
+    pressEnterToCont("Error 404: Client Not Found. Run \"Add Client Command\"", true);
+    return; // End this Function
+  }
+
+  assert(clientId > 0 && index >= 0); // Check Client ID and Index
+
+  cout << '\n';
+  printClientInfo((*clients).getClient(index), true); // Print Client Info
+  cout << '\n';
+
+  if (!booleanQuestion("Is this your Account?"))
+    return; // End this Function
+
+  ostringstream rents;
+  ifstream ifRentsCSV(rentsFilename);
+
+  rents << clear << sgrBgCmd << sgrFgCmd << left;
+  for (int i = 0; i < 3; i++) // Rents Title
+    rents << setw(fieldsNChar[i]) << setfill(' ') << rentTitle[i];
+  rents << reset << '\n';
+
+  while (getline(ifRentsCSV, line)) // Get Movie Rents
+    try
+    {
+      if (line.length() == 0)
+        continue;
+
+      stringstream file(line);
+
+      count = 0;
+      isClient = false;
+      while (getline(file, word, sep))
+      {
+        if (word.length() != 0 && (count == 0 || isClient))
+          switch (count)
+          {
+          case 0:
+            try
+            {
+              tempId = stoi(word); // Client ID
+              isClient = (tempId == clientId);
+
+              if (isClient)
+                movCounter++;
+            }
+            catch (...)
+            {
+              // Ignore Movie Movement
+            }
+            break;
+          default:
+            rents << setw(fieldsNChar[count - 1]) << setfill(' ') << word;
+          }
+        count++;
+      }
+      if (isClient)
+        rents << '\n';
+    }
+    catch (...)
+    {
+      // It will Ignore the Line that was Read from rents.csv
+    }
+  ifRentsCSV.close();
+
+  if (movCounter == 0)
+  {
+    printTitle("No Movement Found", true, true, true);
+    cout << '\n';
+    pressEnterToCont("Press ENTER to Continue", false);
+    return; // End this Function
+  }
+
+  cout << rents.str();
+
+  cout << '\n';
+  pressEnterToCont("Press ENTER to Continue", false);
+}
 
 // Function to Check Movie Rent Status
 void getMovieStatus(Movies *movies)
@@ -502,7 +601,7 @@ void getMovieStatus(Movies *movies)
   cout << '\n';
   movieStatus = getMovieId(movies, &id, &index, "Movie ID"); // Get Movie ID
 
-  assert(id > 0); // Check Movie Id
+  assert(id > 0); // Check Movie ID
 
   cout << '\n';
   if (movieStatus == movieNotFound)
@@ -554,13 +653,14 @@ void viewClients(Clients *clients, bool fields[], int sortBy[])
   sortClients(clients, sortBy, clientFieldEnd - 1); // Sort Clients
   printClients(clients, fields);                    // Print Clients
 
+  cout << '\n';
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
 // Function to Filter Clients
 void searchClients(Clients *clients, string **params, int sortBy[])
 {
-  int l = clientFieldEnd - 1, m = maxParamPerSubCmd, n = clientFieldEnd - 1, nClientsFiltered;
+  int l = clientFieldEnd - 1, m = maxParamPerSubCmd, n = clientFieldEnd - 1;
   bool fields[l];
   string sortByStr[n];
 
@@ -574,12 +674,14 @@ void searchClients(Clients *clients, string **params, int sortBy[])
   cout << clear;
   printTitle("Client Fields Parameters", applyBgColor, applyFgColor, false);
   print2DArray(params, l, m, clientFieldCmdsStr);
+
   printTitle("Sort By Parameters", applyBgColor, applyFgColor, false);
   printArray(sortByStr, n, "Sort By");
 
   pressEnterToCont("Press ENTER to Continue", false);
 
   filterClientsData(clients, params, fields, sortBy); // Filter Clients
+
   cout << '\n';
   pressEnterToCont("Press ENTER to Continue", false);
 }
@@ -628,7 +730,7 @@ void sortByParameters()
   cout << clear; // Clear Terminal
   printTitle("Movie Sort By Parameters", applyBgColor, applyFgColor, false);
 
-  for (int i = 0; i <= movieFieldEnd - 1; i++)
+  for (int i = 0; i < movieFieldEnd; i++)
   {
     if (!movieValidFieldsToSort[i]) // Invalid Field to Sort
       continue;
@@ -646,7 +748,7 @@ void sortByParameters()
 
   printTitle("Client Sort By Parameters", applyBgColor, applyFgColor, false);
 
-  for (int i = 0; i <= clientFieldEnd - 1; i++)
+  for (int i = 0; i < clientFieldEnd; i++)
   {
     if (!clientValidFieldsToSort[i]) // Invalid Field to Sort By
       continue;
@@ -661,7 +763,6 @@ void sortByParameters()
          << setw(nCharTitle) << setfill(' ') << descending << '\n';
   }
   cout << '\n';
-
   pressEnterToCont("Press ENTER to Continue", false);
 }
 
@@ -677,7 +778,7 @@ void clientFields()
   cout << '\n';
 
   printTitle("Field as a Command (for Search Clients)", applyBgColor, applyFgColor, false);
-  for (int i = 0; i < clientFieldEnd - 1; i++)
+  for (int i = 0; i < clientFieldEnd; i++)
     if (clientValidFieldsToFilter[i])
     {
       temp = addBrackets(clientFieldCmdsChar[i]).append(" [param...]");
@@ -709,9 +810,9 @@ void howToUseViewMovies()
 
   cmdExplanation examples[nCmds] = {
       cmdExplanation{
-          "v -f . -s i", "View All Movie Fields. Sort them by Id in Ascending Order"},
+          "v -f . -s i", "View All Movie Fields. Sort them by ID in Ascending Order"},
       cmdExplanation{
-          "v -f g p r -s I p", "View Genre, Price and Release Date Movie Field. Sort them by Id in Descending Order and by Price in Ascending Order"}};
+          "v -f g p r -s I p", "View Genre, Price and Release Date Movie Field. Sort them by ID in Descending Order and by Price in Ascending Order"}};
 
   printExamples(examples, nCmds);
 
@@ -726,11 +827,11 @@ void howToUseFilterMovies()
 
   cmdExplanation examples[nCmds] = {
       cmdExplanation{
-          "f -f --g Horror Fiction -s i", "Search for Movies that their Genre is Horror and Fiction. Sort them by Id in Ascending Order"},
+          "f -f --g Horror Fiction -s i", "Search for Movies that their Genre is Horror and Fiction. Sort them by ID in Ascending Order"},
       cmdExplanation{
           "f -f --p 20 -s P", "Search for Movies that their Price is 20 or less. Sort them by Price in Descending Order"},
       cmdExplanation{
-          "f -f --i 101 --g Thriller Mistery -s R", "Search for Movie with Id 101 and Movies which has as Genre Either Thriller or Mistery. Sort them by Release Date in Descending Order"},
+          "f -f --i 101 --g Thriller Mistery -s R", "Search for Movie with ID 101 and Movies which has as Genre Either Thriller or Mistery. Sort them by Release Date in Descending Order"},
       cmdExplanation{
           "f -f --d \"David Quiroz\" -s t", "Search for Movies that their Director is David Quiroz. Sort them by Title in Ascending Order"}};
 
@@ -746,8 +847,8 @@ void howToUseViewClients()
   const int nCmds = 2; // Number of Code Examples
 
   cmdExplanation examples[nCmds] = {
-      cmdExplanation{"V -f . -s i", "View All Client Fields. Sort them by Id in Ascending Order"},
-      cmdExplanation{"V -f a i n -s P", "View Client Account Number, Id and Name Field. Sort them by Phone Number in Descending Order"}};
+      cmdExplanation{"V -f . -s i", "View All Client Fields. Sort them by ID in Ascending Order"},
+      cmdExplanation{"V -f a i n -s P", "View Client Account Number, ID and Name Field. Sort them by Phone Number in Descending Order"}};
 
   printExamples(examples, nCmds);
 
@@ -762,10 +863,10 @@ void howToUseSearchClients()
 
   cmdExplanation examples[nCmds] = {
       cmdExplanation{
-          "F -f --i 101 --n Ramon -s i", "Search for Clients Named as Ramon and the Client with Id 101. Sort them by Id in Ascending Order"},
+          "F -f --i 101 --n Ramon -s i", "Search for Clients Named as Ramon and the Client with ID 101. Sort them by ID in Ascending Order"},
       cmdExplanation{
           "F -f --n \"Andres Avila\" \"Ronald Lopez\" Ivana Grecia -s n", "Search for Clients Named as Andres Avila, Ronald Lopez, Ivana and Grecia. Sort them by Name in Ascending Order"},
-      cmdExplanation{"F -f --n  Roberto --i 123456789 -s N", "Search for Clients whose Name is Roberto and the Client whose Id is 123456789. Sort them by Name in Descending Order"}};
+      cmdExplanation{"F -f --n  Roberto --i 123456789 -s N", "Search for Clients whose Name is Roberto and the Client whose ID is 123456789. Sort them by Name in Descending Order"}};
 
   printExamples(examples, nCmds);
 
@@ -797,13 +898,13 @@ int getMovieSortByStr(int sortBy[], string sortByStr[], int n)
       order = "[D] ";
 
     if (!nullParam)
-      sortByStr[nParams++] = order.append(movieFieldCmdsStr[fieldIndex]); // Data to Print in the Sort By Parameters Row
+      sortByStr[nParams++] = order.append(movieFieldCmdsStr[fieldIndex]); // Data to Print Sort By Parameters Row
   }
   assert(nParams >= 0); // Check nParams
   return nParams;
 }
 
-// Function to Get a String Array from a Int Array of the Sort By Commands that will be Applied to the Clients
+// Function to Get a String Array from an Integer Array of the Sort By Commands that will be Applied to the Clients
 int getClientSortByStr(int sortBy[], string sortByStr[], int n)
 {
   bool nullParam, ascOrder;
@@ -828,7 +929,7 @@ int getClientSortByStr(int sortBy[], string sortByStr[], int n)
       order = "[D] ";
 
     if (!nullParam)
-      sortByStr[nParams++] = order.append(clientFieldCmdsStr[fieldIndex]); // Data to Print in the Sort By Parameters Row
+      sortByStr[nParams++] = order.append(clientFieldCmdsStr[fieldIndex]); // Data to Print Sort By Parameters Row
   }
   assert(nParams >= 0); // Check nParams
   return nParams;
@@ -860,7 +961,8 @@ void deleteHistory(int id, bool isMovieId)
           case 0:
             try
             {
-              tempId = stoi(word); // Client Id
+              tempId = stoi(word); // Client ID
+
               if (!isMovieId && tempId == id)
                 rents << deletedClient;
               else
@@ -874,7 +976,8 @@ void deleteHistory(int id, bool isMovieId)
           case 1:
             try
             {
-              tempId = stoi(word); // Movie Id
+              tempId = stoi(word); // Movie ID
+
               if (isMovieId && tempId == id)
                 rents << deletedMovie;
               else
@@ -886,7 +989,7 @@ void deleteHistory(int id, bool isMovieId)
             }
             break;
           default:
-            rents << word; // Movie Movement, Movie Movement Time
+            rents << word; // Movie Movement Type, Movie Movement Time
           }
         rents << sep;
         count++;

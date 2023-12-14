@@ -25,7 +25,7 @@ void removeClient(Movies *movies, Clients *clients);
 void viewMovies(Movies *movies, bool fields[], int sortBy[]);
 void filterMovies(Movies *movies, string **params, int sortBy[]);
 void displayRentedMovies(Movies *movies);
-void clientRentedMovies();
+void clientRentedMovies(Clients *clients);
 void getMovieStatus(Movies *movies);
 void viewClients(Clients *clients, bool fields[], int sortBy[]);
 void searchClients(Clients *clients, string **params, int sortBy[]);
@@ -44,16 +44,17 @@ void deleteHistory(int id, bool isMovieId);
 
 // --- Templates
 
-// Template to Return a String that's Surrounded by Brackets
 template <typename T>
+
+// Template to Return a String that's Surrounded by Brackets
 string addBrackets(T message)
 {
   string addedBrackets;
 
   if (typeid(T) == typeid(const int)) // Checks if it's a Char
-    addedBrackets += message;         // Works fine it Message is a Char
+    addedBrackets += message;         // Works fine if Message is a Char
   else
-    addedBrackets = message; // Message is of type String´
+    addedBrackets = message; // Message is of type String
 
   assert(addedBrackets.length() > 0); // Check if the Character Could be Appended to the String
   addedBrackets.insert(0, 1, '[');

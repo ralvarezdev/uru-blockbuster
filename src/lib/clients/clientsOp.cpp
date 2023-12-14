@@ -89,22 +89,22 @@ void addClientToFile(Clients *clients)
 
   int check, id, index = -1;
 
-  check = getClientId(clients, &id, &index, "Client ID"); // Get Client Id
+  check = getClientId(clients, &id, &index, "Client ID"); // Get Client ID
 
-  if (check != clientNotFound) // The Id has been Added to that File
+  if (check != clientNotFound) // The ID has been Added to that File
   {
-    assert(id > 0 && index >= 0); // Check Client Id and Index
+    assert(id > 0 && index >= 0); // Check Client ID and Index
     wrongClientData(clientExists);
     return; // End this Function
   }
 
-  assert(id > 0 && index == -1); // Check Client Id and Index
+  assert(id > 0 && index == -1); // Check Client ID and Index
   newClient.id = id;             // Assign Client ID
 
   createClientWithId(clients, newClient, &index);
 }
 
-// Function to Create Client after Assigning an Id to the Client
+// Function to Create Client after Assigning an ID to Client
 void createClientWithId(Clients *clients, Client newClient, int *index)
 {
   int nClients = (*clients).getNumberClients();
@@ -126,7 +126,7 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
 
   newClient.phoneNumber = getDouble("Phone Number", 0, maxPhoneNumber, 0); // Get Client Phone Number
 
-  // Get Client Account Number. Previously, Sorted by Id in Ascending Order (in getClientId Function)
+  // Get Client Account Number. Previously, Sorted by ID in Ascending Order (in getClientId Function)
   clientsMergeSort(clients, clientFieldAccountNumber * 2);
   if (nClients > 0)
     newClient.account = (*clients).getClient(nClients - 1).account + 1;
@@ -138,14 +138,13 @@ void createClientWithId(Clients *clients, Client newClient, int *index)
   ofstream clientsBIN(clientsFilename, ios::app | ios::binary); // Write to File
 
   clientsBIN.write((char *)&newClient, sizeof(Client));
-
   clientsBIN.close();
 
   cout << '\n';
   pressEnterToCont("Client Added Successfully!", false);
 }
 
-// Function that Returns Clients Indexes that Matched with the Parameters
+// Function that Returns Client Indexes that Matched with the Parameters
 void filterClientsData(Clients *clients, string **params, bool fields[], int sortBy[])
 {
   clientStatus clientStatus;
@@ -156,9 +155,9 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
   assert(nClientsRead >= 0); // Check if the Number of Clients is Greater or Equal to 0
 
   bool *filteredIndexes = new bool[nClientsRead];               // Allocate Memory
-  fill(filteredIndexes, filteredIndexes + nClientsRead, false); // Fill Array with False Values
+  fill(filteredIndexes, filteredIndexes + nClientsRead, false); // Fill Array with False Booleans
 
-  for (int field = 0; field < clientFieldEnd - 1; field++)
+  for (int field = 0; field < clientFieldEnd; field++)
   {
     if (!clientValidFieldsToFilter[field]) // Check if the Function can Filter that Field, and if there are Parameters
       continue;
@@ -177,8 +176,9 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
           clientStatus = checkClient(clients, id, clientFieldId, &index); // Binary Search
         }
 
+        // Checks if the Client has Already being Filtered
         if (clientStatus != clientNotFound && !filteredIndexes[index])
-        {                                // Checks if the Client has Already being Filtered
+        {
           assert(index >= 0);            // Check the Client Index
           filteredIndexes[index] = true; // Store Index
           counter++;
@@ -188,11 +188,12 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
       {
         nameLower = getLower(params[field][param]); // Get Client Name To Search for in Lowercase
 
-        clientsMergeSort(clients, clientFieldId * 2); // Sort Clients by Id
+        clientsMergeSort(clients, clientFieldId * 2); // Sort Clients by ID
         for (i = 0; i < nClientsRead; i++)
+          // Checks if the Client Name in Lowercase Contains the Parameter that is being Searched
           if (!filteredIndexes[i] && getLower((*clients).getClient(i).name).find(nameLower) != string::npos)
-          {                            // Checks if the Client Name in Lowercase Contains the Parameter that is being Searched by Linear Search
-            filteredIndexes[i] = true; // Save Id
+          {
+            filteredIndexes[i] = true; // Save ID
             counter++;
           }
       }
@@ -200,10 +201,11 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
       {
         phoneNumber = stod(params[field][param]);
 
-        clientsMergeSort(clients, clientFieldId * 2); // Sort Clients by Id
+        clientsMergeSort(clients, clientFieldId * 2); // Sort Clients by ID
         for (i = 0; i < nClientsRead; i++)
+          // Checks if the Client has the Phone Number that is being Searched
           if (!filteredIndexes[i] && (*clients).getClient(i).phoneNumber == phoneNumber)
-          {                            // Checks if the Client has the Phone Number that is being Searched by Linear Search
+          {
             filteredIndexes[i] = true; // Save Index
             counter++;
           }
@@ -221,9 +223,6 @@ void filterClientsData(Clients *clients, string **params, bool fields[], int sor
 
   message = "Number of Coincidences: ";
   message.append(to_string(counter));
-
-  if (counter == 0)
-    cout << string(nChar, '-') << '\n';
 
   cout << '\n';
   printTitle(message, applyBgColor, applyFgColor, (counter == 0) ? true : false); // Print Number of Coincidences
@@ -282,7 +281,7 @@ void clientsMergeSort(Clients *clients, int sortByIndex)
 void clientsMerge(Clients *clients, Client sorted[], int low, int mid, int high, int sortByIndex)
 {
   int i = low, j = mid + 1, k = low;
-  assert(low <= high); // Check if value of low variable is less or equal to high
+  assert(low <= high); // Check if low is less or equal to high
 
   switch (sortByIndex / 2)
   {
@@ -316,7 +315,7 @@ void clientsMerge(Clients *clients, Client sorted[], int low, int mid, int high,
     (*clients).insertAt(i, sorted[i]);
 }
 
-// Function to Ask for Client Id
+// Function to Ask for Client ID
 clientStatus getClientId(Clients *clients, int *id, int *index, string message)
 {
   string temp;
@@ -329,7 +328,7 @@ clientStatus getClientId(Clients *clients, int *id, int *index, string message)
       *id = stoi(temp);
 
       if (*id <= 0)
-        throw(-1); // ID Must be in the Range 0<ID<n
+        throw(-1); // ID Must be in the Range 0 < ID < n
 
       return checkClient(clients, *id, clientFieldId, index);
     }
@@ -353,69 +352,3 @@ void storeMovieMovement(string time, int clientId, int movieId, bool isRent)
            << time << "\n";
   rentsCSV.close();
 }
-
-/*
-int CountRentedMoviesByClient(const string &clientName)
-{
-  int count = 0;
-
-  ifstream inFile("movies.csv");
-  if (!inFile)
-  {
-    cout << "Failed to open movies.csv" << endl;
-    return count;
-  }
-
-  string line;
-  while (getline(inFile, line))
-  {
-    stringstream ss(line);
-    string token;
-    getline(ss, token, ';');
-    int movieId = stoi(token);
-    getline(ss, token, ';');
-
-    getline(ss, token, ';');
-    string rentedTo = token;
-    if (rentedTo == clientName)
-    {
-      count++;
-    }
-  }
-
-  inFile.close();
-
-  return count;
-}
-
-void SearchClientRentals()
-{
-  string clientName;
-  cout << "Enter client name: ";
-  cin.ignore();
-  getline(cin, clientName);
-
-  ifstream clientFile("clients.bin", ios::binary);
-  if (clientFile)
-  {
-    string line;
-    while (getline(clientFile, line))
-    {
-      stringstream ss(line);
-      string name;
-      getline(ss, name, ';');
-      if (name == clientName)
-      {
-        int rentedMovies = CountRentedMoviesByClient(clientName);
-        cout << "Client " << clientName << " has rented " << rentedMovies << " movies." << endl;
-        clientFile.close();
-        return;
-      }
-    }
-    clientFile.close();
-  }
-
-  cout << "Client not found. Registering new client..." << endl;
-  RegisterClient();
-}
-*/

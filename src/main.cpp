@@ -1,9 +1,3 @@
-/*
-#ifdef _WIN32 // For Windows
-#include <windows.h>
-#endif
-*/
-
 #include <iostream>
 #include <filesystem>
 
@@ -34,8 +28,10 @@ extern char *movieFieldCmdsStr[], *clientFieldCmdsStr[], *genreStr[];
 
 // --- Templates
 template <typename T>
+
+// Function that Overwrites the Previous Sorting for a Given Parameter
 void overwriteSortByParam(T *cmdStruct, int *counter, int sortByOrder[], int indexParam)
-{ // It will Overwrite the Previous Sorting for this Parameter, if it was Specified
+{
   if ((*cmdStruct).sortBy[indexParam / 2] != -1)
   {
     sortByOrder[*counter] = indexParam;
@@ -54,7 +50,6 @@ void initPtrArray(string **ptrArray, string array[][maxParamPerSubCmd], int arra
 // Main Function
 int main(int argc, char **argv)
 {
-  // winSetChcpUtf8();                 // Change Codepage While Running the Program to UTF-8  if it's Running in Windows
   std::ios::sync_with_stdio(false); // Desynchronize C++ Streams from C I/O Operations to Increase Performance
 
   ViewMoviesCmd viewMoviesCmd; // Used to Save the Parameters Typed by the User for the Given Command
@@ -96,8 +91,9 @@ int main(int argc, char **argv)
       case wrongMovieFieldParam:
         movieFields(); // Print the Valid Movie Fields as Commands or as Parameters
         break;
+      case wrongClientField:
       case wrongClientFieldParam:
-        clientFields(); // Print the Valid Client Fields as Parameters
+        clientFields(); // Print the Valid Client Fields as Commands or as Parameters
         break;
       case wrongSortByParam:
         sortByParameters(); // Print the Valid Sort By Parameters
@@ -181,7 +177,7 @@ int main(int argc, char **argv)
       int nSortBy = (isMovieData) ? movieFieldEnd - 1 : clientFieldEnd - 1; // Number of Possible Sort By Commands that can be Applied at the Same Time
       assert(nSortBy > 0);                                                  // Check if Enum sortByEnd is Greater than 0
 
-      int sortByOrder[nSortBy], sortByCounter = 0; // Save Sorting Order
+      int sortByOrder[nSortBy]; // Save Sorting Order
       fill(sortByOrder, sortByOrder + nSortBy, -1);
 
       if (isViewCmd && isMovieData)
@@ -245,18 +241,20 @@ int main(int argc, char **argv)
               // Check if the Command is in the Sort By Array
               cmd.param = inputWord[0];
               if (isMovieData)
-                index.param = isCharOnArray(tolower(cmd.param), movieFieldCmdsChar, movieFieldEnd - 1);
+                index.param = isCharOnArray(tolower(cmd.param), movieFieldCmdsChar, movieFieldEnd);
               else
-                index.param = isCharOnArray(tolower(cmd.param), clientFieldCmdsChar, clientFieldEnd - 1);
+                index.param = isCharOnArray(tolower(cmd.param), clientFieldCmdsChar, clientFieldEnd);
 
-              if (index.param == -1 || (isMovieData && !movieValidFieldsToSort[index.param]) || (!isMovieData && !clientValidFieldsToSort[index.param])) // Wrong Sort By Command Parameter
+              // Wrong Sort By Command Parameter
+              if (index.param == -1 || (isMovieData && !movieValidFieldsToSort[index.param]) || (!isMovieData && !clientValidFieldsToSort[index.param]))
                 throw(wrongSortByParam);
 
-              // If the Character is Uppercase, Increase the Index by One to Match with the Descending Order Command Index
               index.param *= 2;
+              sortByCounter++;
+
+              // If the Character is Uppercase, Increase the Index by One to Match with the Descending Order Command Index
               if (isupper(cmd.param))
                 index.param++;
-              sortByCounter++;
 
               if (isMovieData && isViewCmd)
                 overwriteSortByParam(&viewMoviesCmd, &sortByCounter, sortByOrder, index.param);
@@ -270,7 +268,7 @@ int main(int argc, char **argv)
 
             if (sortByCounter != 0)
               continue;
-            break;
+            break; // Invalid Sort By Command
           }
 
           if (!getline(stream, inputWord, ' '))
@@ -294,7 +292,8 @@ int main(int argc, char **argv)
             else
               index.field = isCharOnArray(cmd.field, clientFieldCmdsChar, clientFieldEnd);
 
-            if (isMovieData && (index.field == -1 || (!isViewCmd && !movieValidFieldsToFilter[index.field]))) // Wrong Field Parameter or Field Command
+            // Wrong Field Parameter or Field Command
+            if (isMovieData && (index.field == -1 || (!isViewCmd && !movieValidFieldsToFilter[index.field])))
               throw((isViewCmd) ? wrongMovieFieldParam : wrongMovieField);
             else if (!isMovieData && (index.field == -1 || (!isViewCmd && !clientValidFieldsToFilter[index.field])))
               throw((isViewCmd) ? wrongClientFieldParam : wrongClientField);
@@ -305,14 +304,13 @@ int main(int argc, char **argv)
                 viewMoviesCmd.params[index.field] = true;
               else
                 viewClientsCmd.params[index.field] = true;
-              fieldsCounter++;
 
-              if (getline(stream, inputWord, ' '))
-                // Get the Next Argument
+              if (getline(stream, inputWord, ' '))                    // Get the Next Argument
                 checkCmd(isViewCmd, inputWord, &moreInput, &isField); // Check Command
               else if (sortByCounter == 0)
-                throw(wrongSortByParam); // Missing Sort By Param
+                throw(wrongSortByParam); // Missing Sort By Parameter
 
+              fieldsCounter++;
               continue;
             }
 
@@ -323,18 +321,20 @@ int main(int argc, char **argv)
             else
               paramCounter = &searchClientsCmd.counter[index.field];
 
+            // Iterate while there's a Parameter and can be Added to the Array
             while (*paramCounter < maxParamPerSubCmd && getline(stream, inputWord, ' '))
-            {                              // Iterate while there's a Parameter and can be Added to the Array
-              if (inputWord.length() == 0) // To Prevent Adding Whitespaces as Parameters-
+            {
+              if (inputWord.length() == 0) // To Prevent Adding Whitespaces as Parameters
                 continue;
               else if (inputWord[0] != '"')
               {
                 checkCmd(isViewCmd, inputWord, &moreInput, &isField); // Check Command
+
                 if (moreInput)
                   break;
               }
-              else
-              { // If it Starts with Double Quote, it's a Long Sentence (a Parameter with Multiple Words)
+              else // If it Starts with Double Quote, it's a Long Sentence (a Parameter with Multiple Words)
+              {
                 if (!getline(stream, inputLong, '"'))
                   throw((isMovieData) ? wrongFilterMoviesCmd : wrongSearchClientsCmd); // Incomplete Long Parameter
 
@@ -346,8 +346,8 @@ int main(int argc, char **argv)
               {
                 assert(inputWord.length() != 0); // Check inputWord String Length
 
-                if (!isMovieData)
-                { // Add Parameter to Search Client
+                if (!isMovieData) // Add Parameter to Search Client
+                {
                   if (index.field == clientFieldId)
                     stoi(inputWord); // Check if the String can be Converted into an Integer
 
@@ -394,26 +394,28 @@ int main(int argc, char **argv)
           }
         }
 
+        int *sortBy;
+
+        if (isViewCmd)
+          sortBy = (isMovieData) ? viewMoviesCmd.sortBy : viewClientsCmd.sortBy;
+        else
+          sortBy = (isMovieData) ? filterMoviesCmd.sortBy : searchClientsCmd.sortBy;
+
         for (int i = 0; i < nSortBy; i++) // Save the Sort By Array based on the Order they were Introduced
-        {
           if (sortByOrder[i] == -1)
             continue;
-
-          if (isViewCmd && isMovieData)
-            viewMoviesCmd.sortBy[i] = sortByOrder[i];
-          else if (isMovieData)
-            filterMoviesCmd.sortBy[i] = sortByOrder[i];
-          else if (isViewCmd)
-            viewClientsCmd.sortBy[i] = sortByOrder[i];
           else
-            searchClientsCmd.sortBy[i] = sortByOrder[i];
+            sortBy[i] = sortByOrder[i];
+
+        if (fieldsCounter == 0)
+        {
+          if (isMovieData)
+            throw((isViewCmd) ? wrongMovieField : wrongMovieFieldParam);
+          else
+            throw((isViewCmd) ? wrongClientField : wrongClientFieldParam);
         }
 
-        if (fieldsCounter == 0 && isMovieData)
-          throw((isViewCmd) ? wrongMovieField : wrongMovieFieldParam);
-        else if (fieldsCounter == 0)
-          throw((isViewCmd) ? wrongClientField : wrongClientFieldParam);
-        else if (sortByCounter == 0)
+        if (sortByCounter == 0)
           throw(wrongSortByParam);
       }
       catch (cmdStatus cmdStatus)
@@ -423,10 +425,10 @@ int main(int argc, char **argv)
       }
     }
 
-    if (isCmd != validCmd)
-    { // Chekc if the Command is Valid
-      if (timesExec > 1 || (timesExec == 0 && argc == 1))
-        cout << '\n'; // Print a New Line
+    if (isCmd != validCmd) // Check if the Command is Valid
+    {
+      if (timesExec > 1 || (timesExec == 1 && argc == 1))
+        cout << '\n';
       continue;
     }
 
@@ -450,7 +452,7 @@ int main(int argc, char **argv)
       displayRentedMovies(&movies);
       break;
     case cmdClientRentedMovies:
-      clientRentedMovies();
+      clientRentedMovies(&clients);
       break;
     case cmdAddMovie:
       addMovie(&movies);
@@ -511,7 +513,7 @@ int main(int argc, char **argv)
 
 // --- Functions
 
-// Function to Output Help Message in the Terminal
+// Function to Print Help Message in the Terminal
 void helpMessage()
 {
   cout << clear;

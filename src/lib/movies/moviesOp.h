@@ -14,6 +14,7 @@ void getMovies(Movies *movies);
 movieStatus checkMovie(Movies *movies, int id, int *index);
 int getGenreIndex(string genre);
 int getGenreIndexLower(string genre);
+void getDate(string word, int date[], int n);
 void filterMoviesData(Movies *movies, string **params, bool fields[], int sortBy[]);
 void sortMovies(Movies *movies, int sortBy[], int n);
 string getGenresStr(int genres[]);

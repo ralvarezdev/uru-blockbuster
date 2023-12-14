@@ -42,8 +42,9 @@ namespace terminal
   const string sgrFgCmdError = "\x1b[38;2;255;212;59m";
 
   // - Number of Characters
-  const int paramPerLine = 3;                                 // Number of Parameters Printed by Line
-  const int maxSpacing = 4;                                   // If the Maximum Number Characters is Reached this is the Spacing between Paratemeters
+  const int paramPerLine = 3; // Number of Parameters Printed by Line
+  const int maxSpacing = 4;   // If the Maximum Number Characters is Reached this is the Spacing between Paratemeters
+
   const int nCharField = 15;                                  // Number of Characters for Field Title
   const int nFieldChars = 50;                                 // Number of Characters for Each Field
   const int nCharTitle = 30;                                  // Number of Characters of the Parameter Title Printed
@@ -151,33 +152,33 @@ namespace commands
   // - View Movies Command Parameters Structure
   struct ViewMoviesCmd
   {
-    bool params[movieFieldEnd];    // 1D Array to Save the Fields to Show in View Movies
-    int sortBy[movieFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    bool params[movieFieldEnd]; // 1D Array to Save the Fields to Show in View Movies
+    int sortBy[movieFieldEnd];  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - Filter Movies Command Parameters Structure
   struct FilterMoviesCmd
   {
-    string params[movieFieldEnd - 1][maxParamPerSubCmd]; // 2D String Array of Field Parameters
-    string *paramsPtr[movieFieldEnd - 1];                // 1D Pointer Array to to the 2D Array
-    int counter[movieFieldEnd - 1];                      // Filter Movies Field Parameters Counter
-    int sortBy[movieFieldEnd - 1];                       // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    string params[movieFieldEnd][maxParamPerSubCmd]; // 2D String Array of Field Parameters
+    string *paramsPtr[movieFieldEnd];                // 1D Pointer Array to the 2D Array
+    int counter[movieFieldEnd];                      // Filter Movies Field Parameters Counter
+    int sortBy[movieFieldEnd];                       // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - View Clients Command Parameters Structure
   struct ViewClientsCmd
   {
-    bool params[clientFieldEnd];    // 1D Array to Save the Fields to Show in View Clients
-    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    bool params[clientFieldEnd]; // 1D Array to Save the Fields to Show in View Clients
+    int sortBy[clientFieldEnd];  // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - Search Clients Command Parameters Structure
   struct SearchClientsCmd
   {
-    string params[clientFieldEnd - 1][maxParamPerSubCmd]; // 2D String Array of Clients Parameters
-    string *paramsPtr[clientFieldEnd - 1];                // 1D Pointer Array to to the 2D Array
-    int counter[clientFieldEnd - 1];
-    int sortBy[clientFieldEnd - 1]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
+    string params[clientFieldEnd][maxParamPerSubCmd]; // 2D String Array of Clients Parameters
+    string *paramsPtr[clientFieldEnd];                // 1D Pointer Array to the 2D Array
+    int counter[clientFieldEnd];
+    int sortBy[clientFieldEnd]; // For a Field, only Allowed Ascending or Descending Order, not Both at the Same Time
   };
 
   // - Command Structure
@@ -272,7 +273,7 @@ namespace clients
       this->occupied++;
     }
 
-    void increaseArrayCapacity() // Function to Double the Array Capacity
+    void increaseArrayCapacity() // Method to Double the Array Capacity
     {
       Client *temp = new Client[2 * this->capacity];
       for (int i = 0; i < this->occupied; i++)
@@ -285,14 +286,14 @@ namespace clients
     }
 
     void insertAt(int index, Client client)
-    { // Function to Insert Client. If the Index hasn't been Occupied. The Client will be Pushed Back
+    { // Method to Insert Client. If the Index hasn't been Occupied. The Client will be Pushed Back
       if (index >= this->occupied)
         pushBack(client);
       else
         this->array[index] = client; // Insert Client at Given Index
     }
 
-    void deleteAt(int index) // Function to Delete Client at Given Index
+    void deleteAt(int index) // Method to Delete Client at Given Index
     {
       for (int i = index; i < this->occupied; i++)
         this->array[i] = this->array[i + 1]; // Move Clients
@@ -300,7 +301,7 @@ namespace clients
       this->occupied--; // Reduce Occupied Variable
     }
 
-    void reverse() // Function to Swap the Order of the Array
+    void reverse() // Method to Swap the Order of the Array
     {
       int j = 0, n = this->getNumberClients();
       Client temp;
@@ -314,7 +315,7 @@ namespace clients
       }
     }
 
-    Client compare(int *i, int *j, commands::cmdClientFields field, int increaseIndexBy = 0) // Function to Compare Client Fields
+    Client compare(int *i, int *j, commands::cmdClientFields field, int increaseIndexBy = 0) // Method to Compare Client Fields
     {
       string clientName1, clientName2;
       bool isI = false;
@@ -351,7 +352,7 @@ namespace clients
       return (isI) ? this->array[*i - 1] : this->array[*j - 1];
     }
 
-    void deallocate() // Function to Deallocate Memory
+    void deallocate() // Method to Deallocate Memory
     {
       delete[] this->array;
     }
@@ -460,14 +461,15 @@ namespace movies
     void rentMovie(int clientId, int movieIndex) // Rent Movie
     {
       getCurrentDate(this->array[movieIndex].rentOn); // Change Movie Rent On Field
-      this->array[movieIndex].rentTo = clientId;      // Change Movie Rent To Field
-      this->array[movieIndex].rentStatus = true;      // Change Movie Rent Status Field
+
+      this->array[movieIndex].rentTo = clientId; // Change Movie Rent To Field
+      this->array[movieIndex].rentStatus = true; // Change Movie Rent Status Field
     }
 
     void returnMovie(int movieIndex) // Return Movie
     {
       this->array[movieIndex].rentStatus = false; // Set Movie Rent Status to False
-      this->array[movieIndex].rentTo = -1;        // Set to NULL Id
+      this->array[movieIndex].rentTo = -1;        // Set ID to NULL
     }
 
     void pushBack(Movie newMovie)
@@ -479,9 +481,10 @@ namespace movies
       this->occupied++;
     }
 
-    void increaseArrayCapacity() // Function to Double the Array Capacity
+    void increaseArrayCapacity() // Method to Double the Array Capacity
     {
       Movie *temp = new Movie[2 * this->capacity];
+
       for (int i = 0; i < this->occupied; i++)
         temp[i] = this->array[i]; // Copy Pointer to Movie Structures
 
@@ -492,14 +495,14 @@ namespace movies
     }
 
     void insertAt(int index, Movie movie)
-    { // Function to Insert Movie. If the Index hasn't been Occupied. The Movie will be Pushed Back
+    { // Method to Insert Movie. If the Index hasn't been Occupied. The Movie will be Pushed Back
       if (index >= this->occupied)
         this->pushBack(movie);
       else
         this->array[index] = movie; // Insert Movie at Given Index
     }
 
-    void deleteAt(int index) // Function to Delete Movie at Given Index
+    void deleteAt(int index) // Method to Delete Movie at Given Index
     {
       for (int i = index; i < this->occupied; i++)
         this->array[i] = this->array[i + 1]; // Move Movies
@@ -507,7 +510,7 @@ namespace movies
       this->occupied--; // Reduce Occupied Variable
     }
 
-    void reverse() // Function to Swap the Order of the Array
+    void reverse() // Method to Swap the Order of the Array
     {
       int j = 0, n = this->getNumberMovies();
       Movie temp;
@@ -521,7 +524,7 @@ namespace movies
       }
     }
 
-    Movie compare(int *i, int *j, commands::cmdMovieFields field, int increaseIndexBy = 0) // Function to Compare Movie Fields
+    Movie compare(int *i, int *j, commands::cmdMovieFields field, int increaseIndexBy = 0) // Method to Compare Movie Fields
     {
       bool isI = false;
 
@@ -566,7 +569,7 @@ namespace movies
       return (isI) ? this->array[*i - 1] : this->array[*j - 1];
     }
 
-    void deallocate() // Function to Deallocate Memory
+    void deallocate() // Method to Deallocate Memory
     {
       delete[] this->array;
     }

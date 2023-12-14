@@ -21,14 +21,17 @@ void sortClients(Clients *clients, int sortBy[], int n);
 void clientsMergeSort(Clients *clients, int sortByIndex);
 void storeMovieMovement(string time, int clientId, int movieId, bool isRent);
 
-// Function to Check if Client Unique Fields have been Ocuppied
+// --- Templates
+
 template <typename T>
+
+// Function to Check if Client Unique Fields have been Ocuppied
 clientStatus checkClient(Clients *clients, T unique, cmdClientFields field, int *index)
 {
   if (field != clientFieldId && field != clientFieldAccountNumber)
     return clientErrorStatus;
   else
-    clientsMergeSort(clients, field * 2); // Sort Clients by Id or by Account Number
+    clientsMergeSort(clients, field * 2); // Sort Clients by ID or by Account Number
 
   if ((*clients).getNumberClients() == 0)
     return clientNotFound;
@@ -70,7 +73,7 @@ clientStatus checkClient(Clients *clients, T unique, cmdClientFields field, int 
       if (field == clientFieldId)
         *index = mid;
       else if (field == clientFieldAccountNumber)
-        checkClient(clients, client.id, clientFieldId, index); // Get Index of Client with that Account Number when the Array is Sorted by Id
+        checkClient(clients, client.id, clientFieldId, index); // Get Index of Client with that Account Number when the Array is Sorted by ID
 
       return clientFound;
     }
