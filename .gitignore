@@ -1,3 +1,9 @@
+# jetbrain's ides
+.idea/
+
+# vscode
+.vscode/
+
 # ignore ALL .csv, .bin, .cmake files
 *.csv
 *.bin

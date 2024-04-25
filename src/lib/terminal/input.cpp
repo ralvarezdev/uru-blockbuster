@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <stdexcept>
 #include <sstream>
 
 // #define NDEBUG
@@ -178,10 +179,10 @@ void wrongClientData(invalidClient wrongData)
 // Function to Stop the Program Flow while the User doesn't press the ENTER key
 void pressEnterToCont(string message, bool warning)
 {
-  string temp;
+  string _temp;
 
   printTitle(message, applyBgColor, applyFgColor, warning);
-  getline(cin, temp);
+  getline(cin, _temp);
   // ignoreInput();
 }
 
@@ -198,10 +199,17 @@ int getInteger(string message, int low, int high)
       getline(cin, temp);
       amount = stoi(temp);
 
-      if (amount > low && amount <= high)
-        return amount;
+      // Check if the Number is Out of Range
+      if (amount < low || amount > high)
+        throw out_of_range("Amount Out of Range");
+
+      return amount;
     }
-    catch (...)
+    catch (const invalid_argument &e)
+    {
+      pressEnterToCont("ERROR: Invalid Argument. It Must be an Integer", true);
+    }
+    catch (const out_of_range &e)
     {
       ostringstream stream;
 
@@ -225,10 +233,17 @@ double getDouble(string message, double low, double high, int precision)
       getline(cin, temp);
       amount = stod(temp);
 
-      if (amount > low && amount <= high)
-        return amount;
+      // Check if the Number is Out of Range
+      if (amount < low || amount > high)
+        throw out_of_range("Amount Out of Range");
+
+      return amount;
     }
-    catch (...)
+    catch (const invalid_argument &e)
+    {
+      pressEnterToCont("ERROR: Invalid Argument. It Must be a Double", true);
+    }
+    catch (const out_of_range &e)
     {
       ostringstream stream;
 
